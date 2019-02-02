@@ -22,10 +22,16 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class Robot extends TimedRobot {
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
-  private String m_autoSelected;
-  private final SendableChooser<String> m_chooser = new SendableChooser<>();
-  private XboxController controller = new XboxController(0);
-  private Drivetrain drivetrain = new Drivetrain(controller);
+  private String _autoSelected;
+  private final SendableChooser<String> _chooser = new SendableChooser<>();
+
+  /**
+   * Initializing a xbox controller to use for the robot and setting up our
+   * custom drivetrain (see Drivetrain.java). All the drivetrain needs is an
+   * XBox controller.
+   */
+  private final XboxController _controller = new XboxController(0);
+  private final Drivetrain _drivetrain = new Drivetrain(_controller);
 
   /**
    * This function is run when the robot is first started up and should be
@@ -63,9 +69,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
-    m_autoSelected = m_chooser.getSelected();
+    _autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
-    System.out.println("Auto selected: " + m_autoSelected);
+    System.out.println("Auto selected: " + _autoSelected);
   }
 
   /**
@@ -73,7 +79,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    switch (m_autoSelected) {
+    switch (_autoSelected) {
       case kCustomAuto:
         // Put custom auto code here
         break;
@@ -89,7 +95,17 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    drivetrain.arcadeDrive();
+    /**
+     * When TeleOP mode is enabled this block will be called in a loop
+     */
+
+    /**
+     * Here we are just calling our arcade drive that is setup in our
+     * drivetrain (see Drivetrain.java) This will drive the robot with
+     * The left stick of the XBox controller using the Y axis to move
+     * forward and back and the X axis to turn left and right.
+     */
+    _drivetrain.arcadeDrive();
   }
 
   /**
