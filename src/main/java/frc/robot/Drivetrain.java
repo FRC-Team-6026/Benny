@@ -9,6 +9,8 @@ import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+
+import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 /**
@@ -28,11 +30,11 @@ public class Drivetrain{
      //There are 4 motors driving the drive train, and they are combined into two SpeedControllerGroups
      //The controllers are initialized with new WPI_TalonSRX(#) where the number is the CAN ID. The CAN
      //Id's can be viewed and set from the Pheonix Tuner software.
-    private final WPI_TalonSRX _leftFront = new WPI_TalonSRX(0);
-    private final WPI_TalonSRX _leftRear = new WPI_TalonSRX(1);
+    private final WPI_TalonSRX _leftFront = new WPI_TalonSRX(3);
+    private final WPI_TalonSRX _leftRear = new WPI_TalonSRX(4);
     private final SpeedControllerGroup _left = new SpeedControllerGroup(_leftFront, _leftRear);
-    private final WPI_TalonSRX _rightFront = new WPI_TalonSRX(2);
-    private final WPI_TalonSRX _rightRear = new WPI_TalonSRX(3);
+    private final WPI_TalonSRX _rightFront = new WPI_TalonSRX(1);
+    private final WPI_TalonSRX _rightRear = new WPI_TalonSRX(2);
     private final SpeedControllerGroup _right = new SpeedControllerGroup(_rightFront, _rightRear);
 
     //The differential drive is a class from WPI and is exactly that. A way to drive a robot with a
@@ -58,6 +60,24 @@ public class Drivetrain{
         }
 
         _controller = controller;
+    }
+
+    public void initialize(){
+        _leftFront.configFactoryDefault();
+        _leftRear.configFactoryDefault();
+        _rightFront.configFactoryDefault();
+        _rightRear.configFactoryDefault();
+
+        _leftFront.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+        _leftRear.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+        _rightFront.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+        _rightRear.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+
+        _leftFront.setInverted(true);
+        _leftRear.setInverted(true);
+        _rightFront.setInverted(true);
+        _rightRear.setInverted(true);
+        _drive.setRightSideInverted(true);
     }
 
     /**

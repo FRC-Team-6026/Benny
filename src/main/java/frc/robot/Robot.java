@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -42,6 +43,8 @@ public class Robot extends TimedRobot {
     _chooser.setDefaultOption("Default Auto", kDefaultAuto);
     _chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", _chooser);
+    _drivetrain.initialize();
+    CameraServer.getInstance().startAutomaticCapture();
   }
 
   /**
