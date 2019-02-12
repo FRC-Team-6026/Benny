@@ -10,6 +10,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -33,6 +34,7 @@ public class Robot extends TimedRobot {
    */
   private final XboxController _controller = new XboxController(0);
   private final Drivetrain _drivetrain = new Drivetrain(_controller);
+  private final Stilts _stilts = new Stilts();
 
   /**
    * This function is run when the robot is first started up and should be
@@ -44,6 +46,7 @@ public class Robot extends TimedRobot {
     _chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", _chooser);
     _drivetrain.initialize();
+    _stilts.initialize();
     CameraServer.getInstance().startAutomaticCapture();
   }
 
@@ -109,6 +112,36 @@ public class Robot extends TimedRobot {
      * forward and back and the X axis to turn left and right.
      */
     _drivetrain.arcadeDrive();
+
+    var rightBumperDown = _controller.getBumper(Hand.kRight);
+    var leftBumperDown = _controller.getBumper(Hand.kLeft);
+    var rightY = _controller.getY(Hand.kRight);
+    var rightStickDown = rightY < -0.2;
+    var rightStickUp = rightY > 0.2;
+
+    if (rightStickUp){
+      if (rightBumperDown && leftBumperDown){
+        _stilts.raise();
+      } else if (rightBumperDown) {
+        _stilts.raiseFront();
+      } else if (leftBumperDown) {
+        _stilts.raiseRear();
+      } else {
+        _stilts.stop();
+      }
+    } else if (rightStickDown) {
+      if (rightBumperDown && leftBumperDown){
+        _stilts.lower();
+      } else if (rightBumperDown) {
+        _stilts.lowerFront();
+      } else if (leftBumperDown) {
+        _stilts.lowerRear();
+      } else {
+        _stilts.stop();
+      }
+    } else {
+      _stilts.stop();
+    }
   }
 
   /**
