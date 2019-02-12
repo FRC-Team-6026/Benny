@@ -29,11 +29,10 @@ public class Robot extends TimedRobot {
 
   /**
    * Initializing a xbox controller to use for the robot and setting up our
-   * custom drivetrain (see Drivetrain.java). All the drivetrain needs is an
-   * XBox controller.
+   * subsystems
    */
   private final XboxController _controller = new XboxController(0);
-  private final Drivetrain _drivetrain = new Drivetrain(_controller);
+  private final Drivetrain _drivetrain = new Drivetrain();
   private final Stilts _stilts = new Stilts();
 
   /**
@@ -110,8 +109,9 @@ public class Robot extends TimedRobot {
      * drivetrain (see Drivetrain.java) This will drive the robot with
      * The left stick of the XBox controller using the Y axis to move
      * forward and back and the X axis to turn left and right.
+     * We are inverting the x to get the correct turn direction.
      */
-    _drivetrain.arcadeDrive();
+    _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kLeft));
 
     var rightBumperDown = _controller.getBumper(Hand.kRight);
     var leftBumperDown = _controller.getBumper(Hand.kLeft);
