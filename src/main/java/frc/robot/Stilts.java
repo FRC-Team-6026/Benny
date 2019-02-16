@@ -14,6 +14,7 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * This class is just to separate the stilts (motors that move the lifting stilts) code from the
@@ -35,7 +36,7 @@ public class Stilts{
     private final WPI_TalonSRX _frontLegs = new WPI_TalonSRX(6);
     private final WPI_TalonSRX _rearLegs = new WPI_TalonSRX(5);
     private final ADIS16448_IMU _imu;
-    private StiltState _stiltState = StiltState.Stopped;
+    private StiltState _stiltState = StiltState.FullStop;
     private double _commandPitchAngle = 0;
 
     /**
@@ -74,11 +75,22 @@ public class Stilts{
             _frontLegs.set(ControlMode.PercentOutput, frontOutput);
             _rearLegs.set(ControlMode.PercentOutput, rearOutput);
             break;
-            case Stopped:
+            case Hover:
+            var zAccel = _imu.getAccelZ();
+            var zComponent = (1 + (1/zAccel))* 0.1;
+            output = -0.05;
+            frontOutput = output - pitchComponent - zComponent;
+            rearOutput = output + pitchComponent - zComponent;
+            _frontLegs.set(ControlMode.PercentOutput, frontOutput);
+            _rearLegs.set(ControlMode.PercentOutput, rearOutput);
+            break;
+            case FullStop:
             _frontLegs.set(ControlMode.PercentOutput, 0);
             _rearLegs.set(ControlMode.PercentOutput, 0);
             break;
         }
+        SmartDashboard.putNumber("Rear current", _rearLegs.getOutputCurrent());
+        SmartDashboard.putNumber("Front current", _frontLegs.getOutputCurrent());
     }
 
     public void raise(){
@@ -89,8 +101,13 @@ public class Stilts{
         _stiltState = StiltState.Lowering;
     }
 
+    public void hover(){
+        _stiltState = StiltState.Hover;
+    }
+
     public void stop(){
-        _stiltState = StiltState.Stopped;
+        _commandPitchAngle = 0;
+        _stiltState = StiltState.FullStop;
     }
 
     public void setPitchAngle(double angle){
@@ -114,8 +131,9 @@ public class Stilts{
     }
 
     private enum StiltState{
-        Stopped,
+        FullStop,
         Rising,
-        Lowering
+        Lowering,
+        Hover
     }
 }

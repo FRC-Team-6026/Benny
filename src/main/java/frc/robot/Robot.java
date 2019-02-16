@@ -124,6 +124,8 @@ public class Robot extends TimedRobot {
       _stilts.raise();
     } else if (_controller.getBumperPressed(Hand.kLeft)) {
       _stilts.lower();
+    } else if (_controller.getYButtonPressed()){
+      _stilts.hover();
     } else if (_controller.getXButtonPressed()){
       _stilts.stop();
     }
