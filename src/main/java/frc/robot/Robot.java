@@ -7,6 +7,8 @@
 
 package frc.robot;
 
+import com.analog.adis16448.frc.ADIS16448_IMU;
+
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
@@ -32,8 +34,9 @@ public class Robot extends TimedRobot {
    * subsystems
    */
   private final XboxController _controller = new XboxController(0);
+  private final ADIS16448_IMU _imu = new ADIS16448_IMU();
   private final Drivetrain _drivetrain = new Drivetrain();
-  private final Stilts _stilts = new Stilts();
+  private final Stilts _stilts = new Stilts(_imu);
 
   /**
    * This function is run when the robot is first started up and should be
@@ -45,6 +48,7 @@ public class Robot extends TimedRobot {
     _chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", _chooser);
     _drivetrain.initialize();
+    _imu.calibrate();
     _stilts.initialize();
     CameraServer.getInstance().startAutomaticCapture();
   }
@@ -59,6 +63,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    if (_controller.getStickButtonPressed(Hand.kRight)){
+      _imu.calibrate();
+    }
   }
 
   /**
@@ -113,35 +120,15 @@ public class Robot extends TimedRobot {
      */
     _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kLeft));
 
-    var rightBumperDown = _controller.getBumper(Hand.kRight);
-    var leftBumperDown = _controller.getBumper(Hand.kLeft);
-    var rightY = _controller.getY(Hand.kRight);
-    var rightStickDown = rightY < -0.2;
-    var rightStickUp = rightY > 0.2;
-
-    if (rightStickUp){
-      if (rightBumperDown && leftBumperDown){
-        _stilts.raise();
-      } else if (rightBumperDown) {
-        _stilts.raiseFront();
-      } else if (leftBumperDown) {
-        _stilts.raiseRear();
-      } else {
-        _stilts.stop();
-      }
-    } else if (rightStickDown) {
-      if (rightBumperDown && leftBumperDown){
-        _stilts.lower();
-      } else if (rightBumperDown) {
-        _stilts.lowerFront();
-      } else if (leftBumperDown) {
-        _stilts.lowerRear();
-      } else {
-        _stilts.stop();
-      }
-    } else {
+    if (_controller.getBumperPressed(Hand.kRight)){
+      _stilts.raise();
+    } else if (_controller.getBumperPressed(Hand.kLeft)) {
+      _stilts.lower();
+    } else if (_controller.getXButtonPressed()){
       _stilts.stop();
     }
+
+    _stilts.periodic();
   }
 
   /**

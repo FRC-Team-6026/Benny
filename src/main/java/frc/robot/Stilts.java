@@ -1,5 +1,7 @@
 package frc.robot;
 
+import com.analog.adis16448.frc.ADIS16448_IMU;
+
 /**
  * These are the namespaces that we are using in this class. For example the class type
  * and contructors used for the talon controllers WPI_TalonSRX are in the namespace
@@ -8,6 +10,7 @@ package frc.robot;
 
 import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
@@ -29,14 +32,18 @@ public class Stilts{
      //There are 2 motors driving the stilts, and they are combined into one SpeedControllerGroup
      //The controllers are initialized with new WPI_TalonSRX(#) where the number is the CAN ID. The CAN
      //Id's can be viewed and set from the Pheonix Tuner software.
-    private final WPI_TalonSRX _frontLegs = new WPI_TalonSRX(5);
-    private final WPI_TalonSRX _rearLegs = new WPI_TalonSRX(6);
-    private final SpeedControllerGroup _allLegs = new SpeedControllerGroup(_frontLegs, _rearLegs);
+    private final WPI_TalonSRX _frontLegs = new WPI_TalonSRX(6);
+    private final WPI_TalonSRX _rearLegs = new WPI_TalonSRX(5);
+    private final ADIS16448_IMU _imu;
+    private StiltState _stiltState = StiltState.Stopped;
+    private double _commandPitchAngle = 0;
 
     /**
      * This is the contructor to create a stilts object.
      */
-    public Stilts(){}
+    public Stilts(ADIS16448_IMU imu){
+        _imu = imu;
+    }
 
     public void initialize(){
         _frontLegs.configFactoryDefault();
@@ -46,12 +53,48 @@ public class Stilts{
         _rearLegs.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
     }
 
+    public void periodic(){
+        var output = 0.0;
+        var frontOutput = 0.0;
+        var rearOutput = 0.0;
+        var pitchDiff = _commandPitchAngle - _imu.getPitch();
+        var pitchComponent = Math.min(1, pitchDiff / 5.0) * 0.1;
+        switch(_stiltState){
+            case Rising:
+            output = -.2;
+            frontOutput = output - pitchComponent;
+            rearOutput = output + pitchComponent + -.1;
+            _frontLegs.set(ControlMode.PercentOutput, frontOutput);
+            _rearLegs.set(ControlMode.PercentOutput, rearOutput);
+            break;
+            case Lowering:
+            output = .1;
+            frontOutput = output - pitchComponent;
+            rearOutput = output + pitchComponent;
+            _frontLegs.set(ControlMode.PercentOutput, frontOutput);
+            _rearLegs.set(ControlMode.PercentOutput, rearOutput);
+            break;
+            case Stopped:
+            _frontLegs.set(ControlMode.PercentOutput, 0);
+            _rearLegs.set(ControlMode.PercentOutput, 0);
+            break;
+        }
+    }
+
     public void raise(){
-        _allLegs.set(0.2);
+        _stiltState = StiltState.Rising;
     }
 
     public void lower(){
-        _allLegs.set(-0.2);
+        _stiltState = StiltState.Lowering;
+    }
+
+    public void stop(){
+        _stiltState = StiltState.Stopped;
+    }
+
+    public void setPitchAngle(double angle){
+        _commandPitchAngle = angle;
     }
 
     public void raiseFront(){
@@ -70,7 +113,9 @@ public class Stilts{
         _rearLegs.set(ControlMode.PercentOutput, -0.2);
     }
 
-    public void stop(){
-        _allLegs.set(0);
+    private enum StiltState{
+        Stopped,
+        Rising,
+        Lowering
     }
 }
