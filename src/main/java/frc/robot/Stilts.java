@@ -36,7 +36,8 @@ public class Stilts{
     private final WPI_TalonSRX _frontLegs = new WPI_TalonSRX(6);
     private final WPI_TalonSRX _rearLegs = new WPI_TalonSRX(5);
     private final ADIS16448_IMU _imu;
-    private StiltState _stiltState = StiltState.FullStop;
+    private StiltState _frontStiltState = StiltState.FullStop;
+    private StiltState _rearStiltState = StiltState.FullStop;
     private double _commandPitchAngle = 0;
 
     /**
@@ -58,34 +59,70 @@ public class Stilts{
         var output = 0.0;
         var frontOutput = 0.0;
         var rearOutput = 0.0;
-        var pitchDiff = _commandPitchAngle - _imu.getPitch();
-        var pitchComponent = Math.min(1, pitchDiff / 5.0) * 0.1;
-        switch(_stiltState){
+        var pitch = _imu.getPitch();
+        var pitchDiff = _commandPitchAngle - pitch;
+        var pitchComponent = Math.min(1, pitchDiff / 3.0) * 0.04;
+        switch(_frontStiltState){
             case Rising:
             output = -.2;
             frontOutput = output - pitchComponent;
-            rearOutput = output + pitchComponent + -.1;
             _frontLegs.set(ControlMode.PercentOutput, frontOutput);
-            _rearLegs.set(ControlMode.PercentOutput, rearOutput);
+            if (pitch > 10){
+                _frontStiltState = StiltState.Hover;
+                if (_rearStiltState != StiltState.ForceLower){
+                    _rearStiltState = StiltState.Hover;
+                }
+                _commandPitchAngle = 0;
+            }
             break;
             case Lowering:
             output = .1;
             frontOutput = output - pitchComponent;
-            rearOutput = output + pitchComponent;
             _frontLegs.set(ControlMode.PercentOutput, frontOutput);
+            break;
+            case Hover:
+            var zAccel = _imu.getAccelZ();
+            var zComponent = (1 + (1/zAccel))* 0.1;
+            output = -0.06;
+            frontOutput = output - pitchComponent - zComponent;
+            frontOutput = Math.min(frontOutput, .05);
+            _frontLegs.set(ControlMode.PercentOutput, frontOutput);
+            break;
+            case ForceLower:
+            _frontLegs.set(ControlMode.PercentOutput, .2);
+            break;
+            case FullStop:
+            _frontLegs.set(ControlMode.PercentOutput, 0);
+            break;
+        }
+        switch(_rearStiltState){
+            case Rising:
+            output = -.2;
+            rearOutput = output + pitchComponent + -.1;
+            _rearLegs.set(ControlMode.PercentOutput, rearOutput);
+            var rearCurrent = _rearLegs.getOutputCurrent();
+            if (rearCurrent > 8){
+                _rearStiltState = StiltState.Hover;
+                _commandPitchAngle = 10;
+            }
+            break;
+            case Lowering:
+            output = .1;
+            rearOutput = output + pitchComponent;
             _rearLegs.set(ControlMode.PercentOutput, rearOutput);
             break;
             case Hover:
             var zAccel = _imu.getAccelZ();
             var zComponent = (1 + (1/zAccel))* 0.1;
-            output = -0.05;
-            frontOutput = output - pitchComponent - zComponent;
+            output = -0.07;
             rearOutput = output + pitchComponent - zComponent;
-            _frontLegs.set(ControlMode.PercentOutput, frontOutput);
+            rearOutput = Math.min(rearOutput, .05);
             _rearLegs.set(ControlMode.PercentOutput, rearOutput);
             break;
+            case ForceLower:
+            _rearLegs.set(ControlMode.PercentOutput, 0.2);
+            break;
             case FullStop:
-            _frontLegs.set(ControlMode.PercentOutput, 0);
             _rearLegs.set(ControlMode.PercentOutput, 0);
             break;
         }
@@ -94,46 +131,54 @@ public class Stilts{
     }
 
     public void raise(){
-        _stiltState = StiltState.Rising;
+        _frontStiltState = StiltState.Rising;
+        if (_rearStiltState != StiltState.ForceLower){
+            _rearStiltState = StiltState.Rising;
+        } else {
+            _commandPitchAngle = 10;
+        }
     }
 
     public void lower(){
-        _stiltState = StiltState.Lowering;
+        _frontStiltState = StiltState.Lowering;
+        _rearStiltState = StiltState.Lowering;
+        if (_commandPitchAngle != 0){
+            _commandPitchAngle = 0;
+        }
     }
 
     public void hover(){
-        _stiltState = StiltState.Hover;
+        _frontStiltState = StiltState.Hover;
+        _rearStiltState = StiltState.Hover;
+        if (_commandPitchAngle != 0){
+            _commandPitchAngle = 0;
+        }
     }
 
     public void stop(){
         _commandPitchAngle = 0;
-        _stiltState = StiltState.FullStop;
+        _frontStiltState = StiltState.FullStop;
     }
 
     public void setPitchAngle(double angle){
         _commandPitchAngle = angle;
     }
 
-    public void raiseFront(){
-        _frontLegs.set(ControlMode.PercentOutput, 0.2);
+    public void forceLowerRearLegs(){
+        _commandPitchAngle = 2;
+        _rearStiltState = StiltState.ForceLower;
+        _frontStiltState = StiltState.Hover;
     }
 
-    public void lowerFront(){
-        _frontLegs.set(ControlMode.PercentOutput, -0.2);
-    }
-
-    public void raiseRear(){
-        _rearLegs.set(ControlMode.PercentOutput, 0.2);
-    }
-
-    public void lowerRear(){
-        _rearLegs.set(ControlMode.PercentOutput, -0.2);
+    public void forceLowerFrontLegs(){
+        _frontStiltState = StiltState.ForceLower;
     }
 
     private enum StiltState{
         FullStop,
         Rising,
         Lowering,
+        ForceLower,
         Hover
     }
 }

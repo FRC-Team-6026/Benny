@@ -119,8 +119,8 @@ public class Robot extends TimedRobot {
      * forward and back and the X axis to turn left and right.
      * We are inverting the x to get the correct turn direction.
      */
-    _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kLeft));
-    _Lift.liftControl(_controller.getY(Hand.kRight));
+    _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kRight));
+    _Lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
 
     if (_controller.getBumperPressed(Hand.kRight)){
       _stilts.raise();
@@ -130,6 +130,10 @@ public class Robot extends TimedRobot {
       _stilts.hover();
     } else if (_controller.getXButtonPressed()){
       _stilts.stop();
+    } else if (_controller.getAButtonPressed()){
+      _stilts.forceLowerRearLegs();
+    } else if (_controller.getBButtonPressed()){
+      _stilts.forceLowerFrontLegs();
     }
 
     _stilts.periodic();
