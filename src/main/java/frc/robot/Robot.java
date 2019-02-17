@@ -37,6 +37,7 @@ public class Robot extends TimedRobot {
   private final ADIS16448_IMU _imu = new ADIS16448_IMU();
   private final Drivetrain _drivetrain = new Drivetrain();
   private final Stilts _stilts = new Stilts(_imu);
+  private final Lift _Lift = new Lift();
 
   /**
    * This function is run when the robot is first started up and should be
@@ -119,6 +120,7 @@ public class Robot extends TimedRobot {
      * We are inverting the x to get the correct turn direction.
      */
     _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kLeft));
+    _Lift.liftControl(_controller.getY(Hand.kRight));
 
     if (_controller.getBumperPressed(Hand.kRight)){
       _stilts.raise();
