@@ -9,9 +9,12 @@ package frc.robot;
 
 import com.analog.adis16448.frc.ADIS16448_IMU;
 
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -38,7 +41,9 @@ public class Robot extends TimedRobot {
   private final Drivetrain _drivetrain = new Drivetrain();
   private final Stilts _stilts = new Stilts(_imu);
   private final Lift _Lift = new Lift();
-
+  private final Compressor _compressor = new Compressor(10);
+  private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,0,1);
+  private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,2,3);
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -52,6 +57,8 @@ public class Robot extends TimedRobot {
     _imu.calibrate();
     _stilts.initialize();
     CameraServer.getInstance().startAutomaticCapture();
+    _compressor.setClosedLoopControl(true);
+
   }
 
   /**
@@ -121,21 +128,36 @@ public class Robot extends TimedRobot {
      */
     _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kRight));
     _Lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
-
-    if (_controller.getBumperPressed(Hand.kRight)){
-      _stilts.raise();
-    } else if (_controller.getBumperPressed(Hand.kLeft)) {
-      _stilts.lower();
-    } else if (_controller.getYButtonPressed()){
-      _stilts.hover();
-    } else if (_controller.getXButtonPressed()){
+    if(_controller.getStickButtonPressed(Hand.kLeft)){
+      if (_controller.getBumperPressed(Hand.kRight)){
+        _stilts.raise();
+      } else if (_controller.getBumperPressed(Hand.kLeft)) {
+        _stilts.lower();
+      } else if (_controller.getYButtonPressed()){
+        _stilts.hover();
+      } else if (_controller.getXButtonPressed()){
+        _stilts.stop();
+      } else if (_controller.getAButtonPressed()){
+        _stilts.forceLowerRearLegs();
+      } else if (_controller.getBButtonPressed()){
+        _stilts.forceLowerFrontLegs();
+      }
+    } 
+    if(_controller.getStickButtonReleased(Hand.kLeft)){
       _stilts.stop();
-    } else if (_controller.getAButtonPressed()){
-      _stilts.forceLowerRearLegs();
-    } else if (_controller.getBButtonPressed()){
-      _stilts.forceLowerFrontLegs();
     }
-
+    if(_controller.getAButtonPressed()){
+      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
+    }
+    if(_controller.getYButtonPressed()){
+      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
+    }
+    if(_controller.getXButtonPressed()){
+      _ballHolder.set(DoubleSolenoid.Value.kForward);
+    }
+    if(_controller.getBButtonPressed()){
+      _ballHolder.set(DoubleSolenoid.Value.kReverse);
+    }
     _stilts.periodic();
   }
 
