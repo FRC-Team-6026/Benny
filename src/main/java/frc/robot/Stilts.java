@@ -59,7 +59,7 @@ public class Stilts{
         _rearLegs.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
         _driveWheel.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
 
-        _rearLegs.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
+        _rearLegs.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
     }
 
     public void periodic(){
@@ -98,7 +98,7 @@ public class Stilts{
         switch(_rearStiltState){
             case Rising:
             output = -.2;
-            rearOutput = output + pitchComponent + -.1;
+            rearOutput = output + pitchComponent + -.15;
             _rearLegs.set(ControlMode.PercentOutput, rearOutput);
             var rearCurrent = _rearLegs.getOutputCurrent();
             //if the rear legs have hit the limit switch
