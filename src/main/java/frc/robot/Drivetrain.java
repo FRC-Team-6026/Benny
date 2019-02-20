@@ -39,8 +39,6 @@ public class Drivetrain{
     private final ADIS16448_IMU _imu;
     private double _commandedHeading;
     private double _kp = .15;
-    //private double _ki = .005;
-    //private double _integralError = 0;
 
     //The differential drive is a class from WPI and is exactly that. A way to drive a robot with a
     //motor on each side. It takes in the two speed controller groups created above.
@@ -81,8 +79,7 @@ public class Drivetrain{
         if (Math.abs(rotation) < 0.015) rotation = 0;
         _commandedHeading += rotation * rotation * rotation * 3; //3 degrees per period max
         var error = _commandedHeading - _imu.getAngleZ();
-        //_integralError += error * 0.02; //20ms is the period of the robot
-        var rotationOutput = error * _kp;// + _integralError * _ki;
+        var rotationOutput = error * _kp;
         rotationOutput = Math.min(rotationOutput, 1);
         rotationOutput = Math.max(rotationOutput, -1);
         _drive.arcadeDrive(speed, rotationOutput);
