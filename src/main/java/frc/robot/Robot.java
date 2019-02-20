@@ -41,7 +41,7 @@ public class Robot extends TimedRobot {
   private final ADIS16448_IMU _imu = new ADIS16448_IMU();
   private final Drivetrain _drivetrain = new Drivetrain(_imu);
   private final Stilts _stilts = new Stilts(_imu);
-  private final Lift _Lift = new Lift();
+  private final Lift _lift = new Lift();
   private final Compressor _compressor = new Compressor(10);
   private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,0,1);
   private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,2,3);
@@ -131,7 +131,7 @@ public class Robot extends TimedRobot {
      * We are inverting the x to get the correct turn direction.
      */
     _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kRight));
-    _Lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
+    _lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
 
     if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
       _isStiltMode = !_isStiltMode;
