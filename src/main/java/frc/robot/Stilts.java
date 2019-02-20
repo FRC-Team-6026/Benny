@@ -60,7 +60,6 @@ public class Stilts{
         _driveWheel.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
 
         _rearLegs.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
-        _rearLegs.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
     }
 
     public void periodic(){
