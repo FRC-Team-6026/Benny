@@ -35,6 +35,7 @@ public class Stilts{
      //Id's can be viewed and set from the Pheonix Tuner software.
     private final WPI_TalonSRX _frontLegs = new WPI_TalonSRX(6);
     private final WPI_TalonSRX _rearLegs = new WPI_TalonSRX(5);
+    private final WPI_TalonSRX _driveWheel = new WPI_TalonSRX(8);
     private final ADIS16448_IMU _imu;
     private StiltState _frontStiltState = StiltState.FullStop;
     private StiltState _rearStiltState = StiltState.FullStop;
@@ -50,9 +51,11 @@ public class Stilts{
     public void initialize(){
         _frontLegs.configFactoryDefault();
         _rearLegs.configFactoryDefault();
+        _driveWheel.configFactoryDefault();
 
         _frontLegs.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
         _rearLegs.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+        _driveWheel.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
     }
 
     public void periodic(){
@@ -67,13 +70,6 @@ public class Stilts{
             output = -.2;
             frontOutput = output - pitchComponent;
             _frontLegs.set(ControlMode.PercentOutput, frontOutput);
-            if (pitch > 10){
-                _frontStiltState = StiltState.Hover;
-                if (_rearStiltState != StiltState.ForceLower){
-                    _rearStiltState = StiltState.Hover;
-                }
-                _commandPitchAngle = 0;
-            }
             break;
             case Lowering:
             output = .1;
@@ -103,7 +99,7 @@ public class Stilts{
             var rearCurrent = _rearLegs.getOutputCurrent();
             if (rearCurrent > 8){
                 _rearStiltState = StiltState.Hover;
-                _commandPitchAngle = 10;
+                _frontStiltState = StiltState.Hover;
             }
             break;
             case Lowering:
@@ -120,7 +116,7 @@ public class Stilts{
             _rearLegs.set(ControlMode.PercentOutput, rearOutput);
             break;
             case ForceLower:
-            _rearLegs.set(ControlMode.PercentOutput, 0.2);
+            _rearLegs.set(ControlMode.PercentOutput, 0.1);
             break;
             case FullStop:
             _rearLegs.set(ControlMode.PercentOutput, 0);
@@ -132,27 +128,17 @@ public class Stilts{
 
     public void raise(){
         _frontStiltState = StiltState.Rising;
-        if (_rearStiltState != StiltState.ForceLower){
-            _rearStiltState = StiltState.Rising;
-        } else {
-            _commandPitchAngle = 10;
-        }
+        _rearStiltState = StiltState.Rising;
     }
 
     public void lower(){
         _frontStiltState = StiltState.Lowering;
         _rearStiltState = StiltState.Lowering;
-        if (_commandPitchAngle != 0){
-            _commandPitchAngle = 0;
-        }
     }
 
     public void hover(){
         _frontStiltState = StiltState.Hover;
         _rearStiltState = StiltState.Hover;
-        if (_commandPitchAngle != 0){
-            _commandPitchAngle = 0;
-        }
     }
 
     public void stop(){
@@ -165,13 +151,18 @@ public class Stilts{
     }
 
     public void forceLowerRearLegs(){
-        _commandPitchAngle = 2;
         _rearStiltState = StiltState.ForceLower;
         _frontStiltState = StiltState.Hover;
     }
 
     public void forceLowerFrontLegs(){
         _frontStiltState = StiltState.ForceLower;
+    }
+
+    public void driveWheel(double output){
+        if (Math.abs(output) < 0.015) output = 0;
+        output = output * output * output;
+        _driveWheel.set(ControlMode.PercentOutput, output);
     }
 
     private enum StiltState{

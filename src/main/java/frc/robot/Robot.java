@@ -11,6 +11,7 @@ import com.analog.adis16448.frc.ADIS16448_IMU;
 
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
@@ -44,19 +45,25 @@ public class Robot extends TimedRobot {
   private final Compressor _compressor = new Compressor(10);
   private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,0,1);
   private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,2,3);
+  private UsbCamera _driveCamera;
+  private UsbCamera _targetCamera;
+  private SelectedCamera _selectedCamera;
+  private boolean _isStiltMode = false;
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
    */
   @Override
   public void robotInit() {
+    _imu.calibrate();
     _chooser.setDefaultOption("Default Auto", kDefaultAuto);
     _chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", _chooser);
     _drivetrain.initialize();
-    _imu.calibrate();
     _stilts.initialize();
-    CameraServer.getInstance().startAutomaticCapture();
+    _driveCamera = CameraServer.getInstance().startAutomaticCapture("driver", 0);
+    _targetCamera = CameraServer.getInstance().startAutomaticCapture("target", 1);
+    selectCamera(SelectedCamera.Driver);
     _compressor.setClosedLoopControl(true);
 
   }
@@ -71,9 +78,6 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    if (_controller.getStickButtonPressed(Hand.kRight)){
-      _imu.calibrate();
-    }
   }
 
   /**
@@ -128,7 +132,12 @@ public class Robot extends TimedRobot {
      */
     _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kRight));
     _Lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
-    if(_controller.getStickButtonPressed(Hand.kLeft)){
+
+    if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
+      _isStiltMode = !_isStiltMode;
+    }
+
+    if(_isStiltMode){
       if (_controller.getBumperPressed(Hand.kRight)){
         _stilts.raise();
       } else if (_controller.getBumperPressed(Hand.kLeft)) {
@@ -142,23 +151,26 @@ public class Robot extends TimedRobot {
       } else if (_controller.getBButtonPressed()){
         _stilts.forceLowerFrontLegs();
       }
-    } 
-    if(_controller.getStickButtonReleased(Hand.kLeft)){
-      _stilts.stop();
+      _stilts.driveWheel(_controller.getY(Hand.kRight));
+      _stilts.periodic();
+    } else {
+      if(_controller.getAButtonPressed()){
+        _gripSolenoid.set(DoubleSolenoid.Value.kForward);
+      }
+      if(_controller.getYButtonPressed()){
+        _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
+      }
+      if(_controller.getXButtonPressed()){
+        _ballHolder.set(DoubleSolenoid.Value.kForward);
+      }
+      if(_controller.getBButtonPressed()){
+        _ballHolder.set(DoubleSolenoid.Value.kReverse);
+      }
     }
-    if(_controller.getAButtonPressed()){
-      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
+
+    if(_controller.getStickButtonPressed(Hand.kRight)){
+      toggleCamera();
     }
-    if(_controller.getYButtonPressed()){
-      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
-    }
-    if(_controller.getXButtonPressed()){
-      _ballHolder.set(DoubleSolenoid.Value.kForward);
-    }
-    if(_controller.getBButtonPressed()){
-      _ballHolder.set(DoubleSolenoid.Value.kReverse);
-    }
-    _stilts.periodic();
   }
 
   /**
@@ -166,5 +178,29 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void testPeriodic() {
+  }
+
+  private void selectCamera(SelectedCamera camera){
+    _selectedCamera = camera;
+    if (_selectedCamera == SelectedCamera.Driver){
+      SmartDashboard.putString("Camera Selection", _driveCamera.getName());
+    } else if (_selectedCamera == SelectedCamera.Target){
+      SmartDashboard.putString("Camera Selection", _targetCamera.getName());
+    }
+  }
+
+  private void toggleCamera(){
+    if (_selectedCamera == SelectedCamera.Driver){
+      _selectedCamera = SelectedCamera.Target;
+      SmartDashboard.putString("Camera Selection", _targetCamera.getName());
+    } else if (_selectedCamera == SelectedCamera.Target){
+      _selectedCamera = SelectedCamera.Driver;
+      SmartDashboard.putString("Camera Selection", _driveCamera.getName());
+    }
+  }
+
+  private enum SelectedCamera{
+    Driver,
+    Target
   }
 }

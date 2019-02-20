@@ -7,6 +7,7 @@ package frc.robot;
  */
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
@@ -37,9 +38,9 @@ public class Drivetrain{
     private final SpeedControllerGroup _right = new SpeedControllerGroup(_rightFront, _rightRear);
     private final ADIS16448_IMU _imu;
     private double _commandedHeading;
-    private double _kp = .05;
-    private double _ki = .01;
-    private double _integralError = 0;
+    private double _kp = .15;
+    //private double _ki = .005;
+    //private double _integralError = 0;
 
     //The differential drive is a class from WPI and is exactly that. A way to drive a robot with a
     //motor on each side. It takes in the two speed controller groups created above.
@@ -50,7 +51,6 @@ public class Drivetrain{
      */
     public Drivetrain(ADIS16448_IMU imu){
         _imu = imu;
-        _commandedHeading = _imu.getYaw();
     }
 
     public void initialize(){
@@ -68,6 +68,8 @@ public class Drivetrain{
         _leftRear.setInverted(true);
         _rightFront.setInverted(true);
         _rightRear.setInverted(true);
+
+        _commandedHeading = _imu.getAngleZ();
     }
 
     /**
@@ -76,12 +78,17 @@ public class Drivetrain{
      * The other option would be tank drive (one stick per side so two stick control)
      */
     public void arcadeDrive(double speed, double rotation){
-        _commandedHeading = rotation * rotation * 3.6; //3.6 degrees per period or 180 deg/sec
-        var error = _commandedHeading - _imu.getYaw();
-        _integralError += error * 0.02; //20ms is the period of the robot
-        var rotationOutput = error * _kp + _integralError * _ki;
+        if (Math.abs(rotation) < 0.015) rotation = 0;
+        _commandedHeading += rotation * rotation * rotation * 3; //3 degrees per period max
+        var error = _commandedHeading - _imu.getAngleZ();
+        //_integralError += error * 0.02; //20ms is the period of the robot
+        var rotationOutput = error * _kp;// + _integralError * _ki;
         rotationOutput = Math.min(rotationOutput, 1);
         rotationOutput = Math.max(rotationOutput, -1);
         _drive.arcadeDrive(speed, rotationOutput);
+
+        SmartDashboard.putNumber("Commanded Heading", _commandedHeading);
+        SmartDashboard.putNumber("Gyro Angle", _imu.getAngleZ());
+        SmartDashboard.putNumber("Rotation output", rotationOutput);
     }
 }
