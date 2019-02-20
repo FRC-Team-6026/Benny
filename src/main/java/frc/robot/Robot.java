@@ -151,7 +151,8 @@ public class Robot extends TimedRobot {
       } else if (_controller.getBButtonPressed()){
         _stilts.forceLowerFrontLegs();
       }
-      _stilts.driveWheel(_controller.getY(Hand.kRight));
+      var driveOutput = _controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft);
+      _stilts.driveWheel(driveOutput);
       _stilts.periodic();
     } else {
       if(_controller.getAButtonPressed()){
