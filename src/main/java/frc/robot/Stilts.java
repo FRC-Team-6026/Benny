@@ -11,6 +11,8 @@ import com.analog.adis16448.frc.ADIS16448_IMU;
 import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.InvertType;
+import com.ctre.phoenix.motorcontrol.LimitSwitchNormal;
+import com.ctre.phoenix.motorcontrol.LimitSwitchSource;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
@@ -56,6 +58,9 @@ public class Stilts{
         _frontLegs.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
         _rearLegs.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
         _driveWheel.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+
+        _rearLegs.configForwardLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
+        _rearLegs.configReverseLimitSwitchSource(LimitSwitchSource.FeedbackConnector, LimitSwitchNormal.NormallyOpen);
     }
 
     public void periodic(){
@@ -97,7 +102,8 @@ public class Stilts{
             rearOutput = output + pitchComponent + -.1;
             _rearLegs.set(ControlMode.PercentOutput, rearOutput);
             var rearCurrent = _rearLegs.getOutputCurrent();
-            if (rearCurrent > 8){
+            //if the rear legs have hit the limit switch
+            if (rearCurrent < 0.01){
                 _rearStiltState = StiltState.Hover;
                 _frontStiltState = StiltState.Hover;
             }
