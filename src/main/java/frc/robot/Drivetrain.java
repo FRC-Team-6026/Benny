@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 
 import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.analog.adis16448.frc.ADIS16448_IMU;
 
 /**
  * This class is just to separate the Drivetrain (motors that move the wheels) code from the
@@ -34,6 +35,11 @@ public class Drivetrain{
     private final WPI_TalonSRX _rightFront = new WPI_TalonSRX(1);
     private final WPI_TalonSRX _rightRear = new WPI_TalonSRX(2);
     private final SpeedControllerGroup _right = new SpeedControllerGroup(_rightFront, _rightRear);
+    private final ADIS16448_IMU _imu;
+    private double _commandedHeading;
+    private double _kp = .05;
+    private double _ki = .01;
+    private double _integralError = 0;
 
     //The differential drive is a class from WPI and is exactly that. A way to drive a robot with a
     //motor on each side. It takes in the two speed controller groups created above.
@@ -42,7 +48,10 @@ public class Drivetrain{
     /**
      * This is the contructor to create a drivetrain object.
      */
-    public Drivetrain(){}
+    public Drivetrain(ADIS16448_IMU imu){
+        _imu = imu;
+        _commandedHeading = _imu.getYaw();
+    }
 
     public void initialize(){
         _leftFront.configFactoryDefault();
@@ -67,11 +76,12 @@ public class Drivetrain{
      * The other option would be tank drive (one stick per side so two stick control)
      */
     public void arcadeDrive(double speed, double rotation){
-        /**
-         * for arcade drive to work it needs a Y stick position -1 to 1 and an X stick position -1 to 1
-         * Here we are using the XBox controller Y position of the left stick and the X position of the
-         * left stick.
-         */
-        _drive.arcadeDrive(speed, rotation);
+        _commandedHeading = rotation * rotation * 3.6; //3.6 degrees per period or 180 deg/sec
+        var error = _commandedHeading - _imu.getYaw();
+        _integralError += error * 0.02; //20ms is the period of the robot
+        var rotationOutput = error * _kp + _integralError * _ki;
+        rotationOutput = Math.min(rotationOutput, 1);
+        rotationOutput = Math.max(rotationOutput, -1);
+        _drive.arcadeDrive(speed, rotationOutput);
     }
 }

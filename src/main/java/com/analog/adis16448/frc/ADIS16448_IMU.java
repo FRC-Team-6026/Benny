@@ -5,7 +5,7 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package frc.robot;
+package com.analog.adis16448.frc;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
