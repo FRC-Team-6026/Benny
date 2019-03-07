@@ -35,8 +35,7 @@ public class Lift{
      private final int _slotIndex = 0;
      private final int _timeoutMs = 30;
      private final Gains _liftGains = new Gains(0.2,0,0,0.2,0,1.0);
-     private final double _bottomPosition = 0;
-     private final double _hatchPosition = 1000;
+     private final double _hatchPosition = 0;
      private final double _topPosition = 10000;
      
      /**
@@ -89,10 +88,6 @@ public class Lift{
 
     public void liftManualControl(double output){
         _liftMotor.set(ControlMode.PercentOutput, output);
-    }
-
-    public void goToBottomPosition(){
-        _liftMotor.set(ControlMode.MotionMagic, _bottomPosition);
     }
 
     public void goToHatchPosition(){

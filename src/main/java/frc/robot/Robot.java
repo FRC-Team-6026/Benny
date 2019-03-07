@@ -41,6 +41,7 @@ public class Robot extends TimedRobot {
   private final Compressor _compressor = new Compressor(10);
   private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,0,1);
   private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,2,3);
+  private final DoubleSolenoid _gripExtension = new DoubleSolenoid(10,4,5);
   private boolean _driveCameraSelected = true;
   private UsbCamera _driveCamera;
   private UsbCamera _targetCamera;
@@ -146,24 +147,36 @@ public class Robot extends TimedRobot {
 
   private void operatorPeriodic(){
     //Lift control
-    if (_operatorControl.getBButtonPressed()){
-      _lift.goToHatchPosition();
-    } else if (_operatorControl.getYButtonPressed()){
+    if (_operatorControl.getPOV() == 0){
       _lift.goToTopPosition();
-    } else if (_operatorControl.getAButtonPressed()){
-      _lift.goToBottomPosition();
+    } else if (_operatorControl.getPOV() == 180){
+      _lift.goToHatchPosition();
     }
 
-    grabberControl();
+    solenoidControls();
   }
 
-  private void grabberControl()
+  private void solenoidControls()
   {
     //Grabber control
     if (_operatorControl.getBumperPressed(Hand.kRight)){
       _gripSolenoid.set(DoubleSolenoid.Value.kForward);
     } else if (_operatorControl.getBumperPressed(Hand.kLeft)){
       _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
+    }
+
+    //extension control
+    if (_operatorControl.getYButtonPressed()){
+      _gripExtension.set(DoubleSolenoid.Value.kForward);
+    } else if (_operatorControl.getAButtonPressed()){
+      _gripExtension.set(DoubleSolenoid.Value.kReverse);
+    }
+
+    //ball holder control
+    if (_operatorControl.getBumperPressed(Hand.kRight)){
+      _ballHolder.set(DoubleSolenoid.Value.kForward);
+    } else if (_operatorControl.getBumperPressed(Hand.kLeft)){
+      _ballHolder.set(DoubleSolenoid.Value.kReverse);
     }
   }
 
@@ -185,6 +198,6 @@ public class Robot extends TimedRobot {
 
     _lift.liftManualControl(-_operatorControl.getY(Hand.kLeft));
 
-    grabberControl();
+    solenoidControls();
   }
 }
