@@ -7,9 +7,16 @@
 
 package frc.robot;
 
-import edu.wpi.first.wpilibj.CameraServer;
+import com.analog.adis16448.frc.ADIS16448_IMU;
+
+import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.cscore.UsbCamera;
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
+import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -21,30 +28,35 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
-  private static final String kDefaultAuto = "Default";
-  private static final String kCustomAuto = "My Auto";
-  private String _autoSelected;
-  private final SendableChooser<String> _chooser = new SendableChooser<>();
-
   /**
    * Initializing a xbox controller to use for the robot and setting up our
-   * custom drivetrain (see Drivetrain.java). All the drivetrain needs is an
-   * XBox controller.
+   * subsystems
    */
   private final XboxController _controller = new XboxController(0);
-  private final Drivetrain _drivetrain = new Drivetrain(_controller);
-
+  private final ADIS16448_IMU _imu = new ADIS16448_IMU();
+  private final Drivetrain _drivetrain = new Drivetrain(_imu);
+  private final Stilts _stilts = new Stilts();
+  private final Lift _lift = new Lift();
+  private final Compressor _compressor = new Compressor(10);
+  private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,0,1);
+  private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,2,3);
+  private UsbCamera _driveCamera;
+  private UsbCamera _targetCamera;
+  private SelectedCamera _selectedCamera;
+  private boolean _isStiltMode = false;
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
    */
   @Override
   public void robotInit() {
-    _chooser.setDefaultOption("Default Auto", kDefaultAuto);
-    _chooser.addOption("My Auto", kCustomAuto);
-    SmartDashboard.putData("Auto choices", _chooser);
+    _imu.calibrate();
     _drivetrain.initialize();
-    CameraServer.getInstance().startAutomaticCapture();
+    _stilts.initialize();
+    _driveCamera = CameraServer.getInstance().startAutomaticCapture("driver", 0);
+    _targetCamera = CameraServer.getInstance().startAutomaticCapture("target", 1);
+    selectCamera(SelectedCamera.Driver);
+    _compressor.setClosedLoopControl(true);
   }
 
   /**
@@ -57,6 +69,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    SmartDashboard.putBoolean("Stilt mode", _isStiltMode);
   }
 
   /**
@@ -72,9 +85,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
-    _autoSelected = _chooser.getSelected();
-    // _autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
-    System.out.println("Auto selected: " + _autoSelected);
+    teleopInit(); //not using autonomous mode, just teleop
   }
 
   /**
@@ -82,15 +93,11 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    switch (_autoSelected) {
-      case kCustomAuto:
-        // Put custom auto code here
-        break;
-      case kDefaultAuto:
-      default:
-        // Put default auto code here
-        break;
-    }
+    teleopPeriodic(); //not using autonomous mode, just teleop
+  }
+
+  @Override
+  public void teleopInit() {
   }
 
   /**
@@ -107,8 +114,42 @@ public class Robot extends TimedRobot {
      * drivetrain (see Drivetrain.java) This will drive the robot with
      * The left stick of the XBox controller using the Y axis to move
      * forward and back and the X axis to turn left and right.
+     * We are inverting the x to get the correct turn direction.
      */
-    _drivetrain.arcadeDrive();
+    _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kRight));
+
+    if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
+      _isStiltMode = !_isStiltMode;
+    }
+
+    if(_isStiltMode){
+      if (_controller.getBumperPressed(Hand.kLeft)){
+        _stilts.liftBothLegsToZero();
+      } else if (_controller.getBumperPressed(Hand.kRight)){
+        _stilts.moveToTopPosition();
+      } else if (_controller.getAButtonPressed()){
+        _stilts.liftRearLegsStopFront();
+      }
+    } else {
+      _lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
+
+      if(_controller.getAButtonPressed()){
+        _gripSolenoid.set(DoubleSolenoid.Value.kForward);
+      }
+      if(_controller.getYButtonPressed()){
+        _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
+      }
+      if(_controller.getXButtonPressed()){
+        _ballHolder.set(DoubleSolenoid.Value.kForward);
+      }
+      if(_controller.getBButtonPressed()){
+        _ballHolder.set(DoubleSolenoid.Value.kReverse);
+      }
+    }
+
+    if(_controller.getStickButtonPressed(Hand.kRight)){
+      toggleCamera();
+    }
   }
 
   /**
@@ -116,5 +157,37 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void testPeriodic() {
+    if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
+      _isStiltMode = !_isStiltMode;
+    }
+
+    if(_isStiltMode){
+      _stilts.driveRearLegs(_controller.getY(Hand.kLeft));
+      _stilts.driveFrontLegs(_controller.getY(Hand.kRight));
+    }
+  }
+
+  private void selectCamera(SelectedCamera camera){
+    _selectedCamera = camera;
+    if (_selectedCamera == SelectedCamera.Driver){
+      SmartDashboard.putString("Camera Selection", _driveCamera.getName());
+    } else if (_selectedCamera == SelectedCamera.Target){
+      SmartDashboard.putString("Camera Selection", _targetCamera.getName());
+    }
+  }
+
+  private void toggleCamera(){
+    if (_selectedCamera == SelectedCamera.Driver){
+      _selectedCamera = SelectedCamera.Target;
+      SmartDashboard.putString("Camera Selection", _targetCamera.getName());
+    } else if (_selectedCamera == SelectedCamera.Target){
+      _selectedCamera = SelectedCamera.Driver;
+      SmartDashboard.putString("Camera Selection", _driveCamera.getName());
+    }
+  }
+
+  private enum SelectedCamera{
+    Driver,
+    Target
   }
 }

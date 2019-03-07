@@ -6,12 +6,12 @@ package frc.robot;
  * com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
  */
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+import com.analog.adis16448.frc.ADIS16448_IMU;
 
 /**
  * This class is just to separate the Drivetrain (motors that move the wheels) code from the
@@ -36,30 +36,19 @@ public class Drivetrain{
     private final WPI_TalonSRX _rightFront = new WPI_TalonSRX(1);
     private final WPI_TalonSRX _rightRear = new WPI_TalonSRX(2);
     private final SpeedControllerGroup _right = new SpeedControllerGroup(_rightFront, _rightRear);
+    private final ADIS16448_IMU _imu;
+    private double _commandedHeading;
+    private double _kp = .15;
 
     //The differential drive is a class from WPI and is exactly that. A way to drive a robot with a
     //motor on each side. It takes in the two speed controller groups created above.
     private final DifferentialDrive _drive = new DifferentialDrive(_left, _right);
 
-    //The controller will be initialized in the contstructor since we want to take in a controller
-    //so only one controller object is used for all the Robot code.
-    private final XboxController _controller;
-
     /**
-     * This is the contructor to create a drive train object.
-     * We have the XBox controller as a parameter because the controller is
-     * going to be used in other parts of the robot code, so we only want
-     * one controller being "passed around"
+     * This is the contructor to create a drivetrain object.
      */
-    public Drivetrain(XboxController controller){
-        //We don't want null things being passed in, so we are just verifying it is not null
-        //and if it's not we are throwing an exception. If no one catches the exception, this
-        //will crash the program, which is sometimes what we want.
-        if (controller == null){
-            throw new IllegalArgumentException("controller is null");
-        }
-
-        _controller = controller;
+    public Drivetrain(ADIS16448_IMU imu){
+        _imu = imu;
     }
 
     public void initialize(){
@@ -77,7 +66,8 @@ public class Drivetrain{
         _leftRear.setInverted(true);
         _rightFront.setInverted(true);
         _rightRear.setInverted(true);
-        _drive.setRightSideInverted(true);
+
+        _commandedHeading = _imu.getAngleZ();
     }
 
     /**
@@ -85,12 +75,17 @@ public class Drivetrain{
      * and this method just drives the robot using the arcade drive method (single stick control)
      * The other option would be tank drive (one stick per side so two stick control)
      */
-    public void arcadeDrive(){
-        /**
-         * for arcade drive to work it needs a Y stick position -1 to 1 and an X stick position -1 to 1
-         * Here we are using the XBox controller Y position of the left stick and the X position of the
-         * left stick.
-         */
-        _drive.arcadeDrive(_controller.getY(Hand.kLeft), _controller.getX(Hand.kLeft));
+    public void arcadeDrive(double speed, double rotation){
+        if (Math.abs(rotation) < 0.015) rotation = 0;
+        _commandedHeading += rotation * rotation * rotation * 3; //3 degrees per period max
+        var error = _commandedHeading - _imu.getAngleZ();
+        var rotationOutput = error * _kp;
+        rotationOutput = Math.min(rotationOutput, 1);
+        rotationOutput = Math.max(rotationOutput, -1);
+        _drive.arcadeDrive(speed, rotationOutput);
+
+        SmartDashboard.putNumber("Commanded Heading", _commandedHeading);
+        SmartDashboard.putNumber("Gyro Angle", _imu.getAngleZ());
+        SmartDashboard.putNumber("Rotation output", rotationOutput);
     }
 }
