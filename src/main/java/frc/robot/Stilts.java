@@ -63,6 +63,7 @@ public class Stilts{
     }
 
     public void initialize(){
+		SmartDashboard.putNumber("Top position for stilts", _topPosition);
         /* Factory Default all hardware to prevent unexpected behaviour */
 		_rearLegs.configFactoryDefault();
 		_frontLegs.configFactoryDefault();
@@ -187,7 +188,14 @@ public class Stilts{
 		/* Determine which slot affects which PID */
 		_rearLegs.selectProfileSlot(_positionSlot, _pidPosition);
 		_rearLegs.selectProfileSlot(_differenceSlot, _pidDifference);
-    }
+	}
+	
+	public void smartDashboardDisplay(){
+		var rearPosition = _rearLegs.getSensorCollection().getQuadraturePosition();
+		var frontPosition = _frontLegs.getSensorCollection().getQuadraturePosition();
+		SmartDashboard.putNumber("rear encoder", rearPosition);
+		SmartDashboard.putNumber("front encoder", frontPosition);
+	}
 
     public void driveRearLegs(double output){
 		_rearLegs.set(ControlMode.PercentOutput, output);

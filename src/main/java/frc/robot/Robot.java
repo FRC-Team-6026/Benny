@@ -17,9 +17,7 @@ import edu.wpi.cscore.VideoSource.ConnectionStrategy;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
@@ -34,7 +32,8 @@ public class Robot extends TimedRobot {
    * Initializing a xbox controller to use for the robot and setting up our
    * subsystems
    */
-  private final XboxController _controller = new XboxController(0);
+  private final XboxController _driverControl = new XboxController(0);
+  private final XboxController _operatorControl = new XboxController(1);
   private final ADIS16448_IMU _imu = new ADIS16448_IMU();
   private final Drivetrain _drivetrain = new Drivetrain(_imu);
   private final Stilts _stilts = new Stilts();
@@ -76,6 +75,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     SmartDashboard.putBoolean("Stilt mode", _isStiltMode);
+    SmartDashboard.putNumber("Heading", _imu.getAngleZ());
+    _stilts.smartDashboardDisplay();
   }
 
   /**
@@ -122,38 +123,38 @@ public class Robot extends TimedRobot {
      * forward and back and the X axis to turn left and right.
      * We are inverting the x to get the correct turn direction.
      */
-    _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kRight));
+    _drivetrain.arcadeDrive(_driverControl.getY(Hand.kLeft), -_driverControl.getX(Hand.kRight));
 
-    if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
+    if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
       _isStiltMode = !_isStiltMode;
     }
 
     if(_isStiltMode){
-      if (_controller.getBumperPressed(Hand.kLeft)){
+      if (_driverControl.getBumperPressed(Hand.kLeft)){
         _stilts.liftBothLegsToZero();
-      } else if (_controller.getBumperPressed(Hand.kRight)){
+      } else if (_driverControl.getBumperPressed(Hand.kRight)){
         _stilts.moveToTopPosition();
-      } else if (_controller.getAButtonPressed()){
+      } else if (_driverControl.getAButtonPressed()){
         _stilts.liftRearLegsStopFront();
       }
     } else {
-      _lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
+      _lift.liftControl(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
 
-      if(_controller.getAButtonPressed()){
+      if(_driverControl.getAButtonPressed()){
         _gripSolenoid.set(DoubleSolenoid.Value.kForward);
       }
-      if(_controller.getYButtonPressed()){
+      if(_driverControl.getYButtonPressed()){
         _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
       }
-      if(_controller.getXButtonPressed()){
+      if(_driverControl.getXButtonPressed()){
         _ballHolder.set(DoubleSolenoid.Value.kForward);
       }
-      if(_controller.getBButtonPressed()){
+      if(_driverControl.getBButtonPressed()){
         _ballHolder.set(DoubleSolenoid.Value.kReverse);
       }
     }
 
-    if(_controller.getStartButtonPressed()){
+    if(_driverControl.getStartButtonPressed()){
       _driveCameraSelected = !_driveCameraSelected;
       if (_driveCameraSelected){
         _cameraServer.setSource(_driveCamera);
@@ -168,13 +169,13 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void testPeriodic() {
-    if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
+    if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
       _isStiltMode = !_isStiltMode;
     }
 
     if(_isStiltMode){
-      _stilts.driveRearLegs(_controller.getY(Hand.kLeft));
-      _stilts.driveFrontLegs(_controller.getY(Hand.kRight));
+      _stilts.driveRearLegs(_driverControl.getY(Hand.kLeft));
+      _stilts.driveFrontLegs(_driverControl.getY(Hand.kRight));
     }
   }
 }
