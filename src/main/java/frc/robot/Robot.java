@@ -77,6 +77,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("Stilt mode", _isStiltMode);
     SmartDashboard.putNumber("Heading", _imu.getAngleZ());
     _stilts.smartDashboardDisplay();
+    _lift.smartDashboardDisplay();
   }
 
   /**
@@ -112,18 +113,12 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    /**
-     * When TeleOP mode is enabled this block will be called in a loop
-     */
+    driverPeriodic();
+    operatorPeriodic();
+  }
 
-    /**
-     * Here we are just calling our arcade drive that is setup in our
-     * drivetrain (see Drivetrain.java) This will drive the robot with
-     * The left stick of the XBox controller using the Y axis to move
-     * forward and back and the X axis to turn left and right.
-     * We are inverting the x to get the correct turn direction.
-     */
-    _drivetrain.arcadeDrive(_driverControl.getY(Hand.kLeft), -_driverControl.getX(Hand.kRight));
+  private void driverPeriodic(){
+    _drivetrain.arcadeDrive(-_driverControl.getY(Hand.kLeft), _driverControl.getX(Hand.kRight));
 
     if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
       _isStiltMode = !_isStiltMode;
@@ -137,21 +132,6 @@ public class Robot extends TimedRobot {
       } else if (_driverControl.getAButtonPressed()){
         _stilts.liftRearLegsStopFront();
       }
-    } else {
-      _lift.liftControl(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
-
-      if(_driverControl.getAButtonPressed()){
-        _gripSolenoid.set(DoubleSolenoid.Value.kForward);
-      }
-      if(_driverControl.getYButtonPressed()){
-        _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
-      }
-      if(_driverControl.getXButtonPressed()){
-        _ballHolder.set(DoubleSolenoid.Value.kForward);
-      }
-      if(_driverControl.getBButtonPressed()){
-        _ballHolder.set(DoubleSolenoid.Value.kReverse);
-      }
     }
 
     if(_driverControl.getStartButtonPressed()){
@@ -161,6 +141,29 @@ public class Robot extends TimedRobot {
       } else{
         _cameraServer.setSource(_targetCamera);
       }
+    }
+  }
+
+  private void operatorPeriodic(){
+    //Lift control
+    if (_operatorControl.getBButtonPressed()){
+      _lift.goToHatchPosition();
+    } else if (_operatorControl.getYButtonPressed()){
+      _lift.goToTopPosition();
+    } else if (_operatorControl.getAButtonPressed()){
+      _lift.goToBottomPosition();
+    }
+
+    grabberControl();
+  }
+
+  private void grabberControl()
+  {
+    //Grabber control
+    if (_operatorControl.getBumperPressed(Hand.kRight)){
+      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
+    } else if (_operatorControl.getBumperPressed(Hand.kLeft)){
+      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
     }
   }
 
@@ -174,8 +177,14 @@ public class Robot extends TimedRobot {
     }
 
     if(_isStiltMode){
-      _stilts.driveRearLegs(_driverControl.getY(Hand.kLeft));
-      _stilts.driveFrontLegs(_driverControl.getY(Hand.kRight));
+      _stilts.driveRearLegs(-_driverControl.getY(Hand.kLeft));
+      _stilts.driveFrontLegs(-_driverControl.getY(Hand.kRight));
+    } else {
+      _drivetrain.arcadeDrive(-_driverControl.getY(Hand.kLeft), _driverControl.getX(Hand.kRight));
     }
+
+    _lift.liftManualControl(-_operatorControl.getY(Hand.kLeft));
+
+    grabberControl();
   }
 }

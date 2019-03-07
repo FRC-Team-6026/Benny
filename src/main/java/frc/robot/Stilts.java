@@ -217,8 +217,8 @@ public class Stilts{
 	}
 
 	public void liftBothLegsToZero(){
-		_rearLegs.set(ControlMode.PercentOutput, -.25);
-		_frontLegs.set(ControlMode.PercentOutput, -.25);
+		_rearLegs.set(ControlMode.MotionMagic, 0, DemandType.AuxPID, 0);
+		_frontLegs.follow(_rearLegs, FollowerType.AuxOutput1);
 	}
 
     public void driveWheel(double output){

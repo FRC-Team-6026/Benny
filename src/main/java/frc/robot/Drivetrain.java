@@ -62,10 +62,10 @@ public class Drivetrain{
         _rightFront.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
         _rightRear.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
 
-        _leftFront.setInverted(true);
-        _leftRear.setInverted(true);
-        _rightFront.setInverted(true);
-        _rightRear.setInverted(true);
+        _leftFront.setInverted(false);
+        _leftRear.setInverted(false);
+        _rightFront.setInverted(false);
+        _rightRear.setInverted(false);
 
         _commandedHeading = _imu.getAngleZ();
     }
