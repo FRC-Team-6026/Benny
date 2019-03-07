@@ -160,9 +160,9 @@ public class Robot extends TimedRobot {
   private void solenoidControls()
   {
     //Grabber control
-    if (_operatorControl.getBumperPressed(Hand.kRight)){
+    if (_operatorControl.getXButtonPressed()){
       _gripSolenoid.set(DoubleSolenoid.Value.kForward);
-    } else if (_operatorControl.getBumperPressed(Hand.kLeft)){
+    } else if (_operatorControl.getBButtonPressed()){
       _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
     }
 
