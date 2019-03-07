@@ -133,6 +133,7 @@ public class Robot extends TimedRobot {
       } else if (_driverControl.getAButtonPressed()){
         _stilts.liftRearLegsStopFront();
       }
+      _stilts.driveWheel(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
     }
 
     if(_driverControl.getStartButtonPressed()){
@@ -192,6 +193,7 @@ public class Robot extends TimedRobot {
     if(_isStiltMode){
       _stilts.driveRearLegs(-_driverControl.getY(Hand.kLeft));
       _stilts.driveFrontLegs(-_driverControl.getY(Hand.kRight));
+      _stilts.driveWheel(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
     } else {
       _drivetrain.arcadeDrive(-_driverControl.getY(Hand.kLeft), _driverControl.getX(Hand.kRight));
     }
