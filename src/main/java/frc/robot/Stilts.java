@@ -43,7 +43,8 @@ public class Stilts{
      //Id's can be viewed and set from the Pheonix Tuner software.
     private final WPI_TalonSRX _frontLegs = new WPI_TalonSRX(6);
     private final WPI_TalonSRX _rearLegs = new WPI_TalonSRX(5);
-    private final WPI_TalonSRX _driveWheel = new WPI_TalonSRX(8);
+	private final WPI_TalonSRX _driveWheelRight = new WPI_TalonSRX(8);
+	private final WPI_TalonSRX _driveWheelLeft = new WPI_TalonSRX(9);
 
     private final int _positionSlot = 0;
     private final int _differenceSlot = 1;
@@ -67,9 +68,11 @@ public class Stilts{
         /* Factory Default all hardware to prevent unexpected behaviour */
 		_rearLegs.configFactoryDefault();
 		_frontLegs.configFactoryDefault();
-		_driveWheel.configFactoryDefault();
+		_driveWheelRight.configFactoryDefault();
+		_driveWheelLeft.configFactoryDefault();
 
-		_driveWheel.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+		_driveWheelRight.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+		_driveWheelLeft.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
 		
 		/* Set Neutral Mode */
 		_frontLegs.setNeutralMode(NeutralMode.Brake);
@@ -222,7 +225,8 @@ public class Stilts{
 	}
 
     public void driveWheel(double output){
-        _driveWheel.set(ControlMode.PercentOutput, output);
+		_driveWheelRight.set(ControlMode.PercentOutput, output);
+		_driveWheelLeft.set(ControlMode.PercentOutput, output);
     }
 
     /** Zero quadrature encoders on Talon */
