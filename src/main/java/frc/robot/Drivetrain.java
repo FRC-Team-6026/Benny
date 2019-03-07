@@ -37,8 +37,6 @@ public class Drivetrain{
     private final WPI_TalonSRX _rightRear = new WPI_TalonSRX(2);
     private final SpeedControllerGroup _right = new SpeedControllerGroup(_rightFront, _rightRear);
     private final ADIS16448_IMU _imu;
-    private double _commandedHeading;
-    private double _kp = .15;
 
     //The differential drive is a class from WPI and is exactly that. A way to drive a robot with a
     //motor on each side. It takes in the two speed controller groups created above.
@@ -76,16 +74,6 @@ public class Drivetrain{
      * The other option would be tank drive (one stick per side so two stick control)
      */
     public void arcadeDrive(double speed, double rotation){
-        if (Math.abs(rotation) < 0.015) rotation = 0;
-        _commandedHeading += rotation * rotation * rotation * 3; //3 degrees per period max
-        var error = _commandedHeading - _imu.getAngleZ();
-        var rotationOutput = error * _kp;
-        rotationOutput = Math.min(rotationOutput, 1);
-        rotationOutput = Math.max(rotationOutput, -1);
-        _drive.arcadeDrive(speed, rotationOutput);
-
-        SmartDashboard.putNumber("Commanded Heading", _commandedHeading);
-        SmartDashboard.putNumber("Gyro Angle", _imu.getAngleZ());
-        SmartDashboard.putNumber("Rotation output", rotationOutput);
+        _drive.arcadeDrive(speed, rotation*0.5);
     }
 }
