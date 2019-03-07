@@ -35,7 +35,7 @@ public class Robot extends TimedRobot {
   private final XboxController _controller = new XboxController(0);
   private final ADIS16448_IMU _imu = new ADIS16448_IMU();
   private final Drivetrain _drivetrain = new Drivetrain(_imu);
-  private final Stilts _stilts = new Stilts(_imu);
+  private final Stilts _stilts = new Stilts();
   private final Lift _lift = new Lift();
   private final Compressor _compressor = new Compressor(10);
   private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,0,1);
@@ -69,6 +69,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    SmartDashboard.putBoolean("Stilt mode", _isStiltMode);
   }
 
   /**
@@ -97,7 +98,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    _modeSelected = _chooser.getSelected();
   }
 
   /**
@@ -117,30 +117,22 @@ public class Robot extends TimedRobot {
      * We are inverting the x to get the correct turn direction.
      */
     _drivetrain.arcadeDrive(_controller.getY(Hand.kLeft), -_controller.getX(Hand.kRight));
-    _lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
 
     if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
       _isStiltMode = !_isStiltMode;
     }
 
     if(_isStiltMode){
-      if (_controller.getBumperPressed(Hand.kRight)){
-        _stilts.raise();
-      } else if (_controller.getBumperPressed(Hand.kLeft)) {
-        _stilts.lower();
-      } else if (_controller.getYButtonPressed()){
-        _stilts.hover();
-      } else if (_controller.getXButtonPressed()){
-        _stilts.stop();
+      if (_controller.getBumperPressed(Hand.kLeft)){
+        _stilts.liftBothLegsToZero();
+      } else if (_controller.getBumperPressed(Hand.kRight)){
+        _stilts.moveToTopPosition();
       } else if (_controller.getAButtonPressed()){
-        _stilts.forceLowerRearLegs();
-      } else if (_controller.getBButtonPressed()){
-        _stilts.forceLowerFrontLegs();
+        _stilts.liftRearLegsStopFront();
       }
-      var driveOutput = _controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft);
-      _stilts.driveWheel(driveOutput);
-      _stilts.periodic();
     } else {
+      _lift.liftControl(_controller.getTriggerAxis(Hand.kRight) - _controller.getTriggerAxis(Hand.kLeft));
+
       if(_controller.getAButtonPressed()){
         _gripSolenoid.set(DoubleSolenoid.Value.kForward);
       }
@@ -165,6 +157,14 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void testPeriodic() {
+    if (_controller.getStickButton(Hand.kLeft) && _controller.getStickButtonPressed(Hand.kRight)){
+      _isStiltMode = !_isStiltMode;
+    }
+
+    if(_isStiltMode){
+      _stilts.driveRearLegs(_controller.getY(Hand.kLeft));
+      _stilts.driveFrontLegs(_controller.getY(Hand.kRight));
+    }
   }
 
   private void selectCamera(SelectedCamera camera){
