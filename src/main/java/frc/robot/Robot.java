@@ -12,6 +12,8 @@ import com.analog.adis16448.frc.ADIS16448_IMU;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.cscore.UsbCamera;
+import edu.wpi.cscore.VideoSink;
+import edu.wpi.cscore.VideoSource.ConnectionStrategy;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
@@ -40,9 +42,10 @@ public class Robot extends TimedRobot {
   private final Compressor _compressor = new Compressor(10);
   private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,0,1);
   private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,2,3);
+  private boolean _driveCameraSelected = true;
   private UsbCamera _driveCamera;
   private UsbCamera _targetCamera;
-  private SelectedCamera _selectedCamera;
+  private VideoSink _cameraServer;
   private boolean _isStiltMode = false;
   /**
    * This function is run when the robot is first started up and should be
@@ -55,7 +58,10 @@ public class Robot extends TimedRobot {
     _stilts.initialize();
     _driveCamera = CameraServer.getInstance().startAutomaticCapture("driver", 0);
     _targetCamera = CameraServer.getInstance().startAutomaticCapture("target", 1);
-    selectCamera(SelectedCamera.Driver);
+    _cameraServer = CameraServer.getInstance().getServer();
+    _driveCamera.setConnectionStrategy(ConnectionStrategy.kKeepOpen);
+    _targetCamera.setConnectionStrategy(ConnectionStrategy.kKeepOpen);
+    _cameraServer.setSource(_driveCamera);
     _compressor.setClosedLoopControl(true);
   }
 
@@ -147,8 +153,13 @@ public class Robot extends TimedRobot {
       }
     }
 
-    if(_controller.getStickButtonPressed(Hand.kRight)){
-      toggleCamera();
+    if(_controller.getStartButtonPressed()){
+      _driveCameraSelected = !_driveCameraSelected;
+      if (_driveCameraSelected){
+        _cameraServer.setSource(_driveCamera);
+      } else{
+        _cameraServer.setSource(_targetCamera);
+      }
     }
   }
 
@@ -165,29 +176,5 @@ public class Robot extends TimedRobot {
       _stilts.driveRearLegs(_controller.getY(Hand.kLeft));
       _stilts.driveFrontLegs(_controller.getY(Hand.kRight));
     }
-  }
-
-  private void selectCamera(SelectedCamera camera){
-    _selectedCamera = camera;
-    if (_selectedCamera == SelectedCamera.Driver){
-      SmartDashboard.putString("Camera Selection", _driveCamera.getName());
-    } else if (_selectedCamera == SelectedCamera.Target){
-      SmartDashboard.putString("Camera Selection", _targetCamera.getName());
-    }
-  }
-
-  private void toggleCamera(){
-    if (_selectedCamera == SelectedCamera.Driver){
-      _selectedCamera = SelectedCamera.Target;
-      SmartDashboard.putString("Camera Selection", _targetCamera.getName());
-    } else if (_selectedCamera == SelectedCamera.Target){
-      _selectedCamera = SelectedCamera.Driver;
-      SmartDashboard.putString("Camera Selection", _driveCamera.getName());
-    }
-  }
-
-  private enum SelectedCamera{
-    Driver,
-    Target
   }
 }
