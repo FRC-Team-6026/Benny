@@ -28,11 +28,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
-  private static final String kDefaultAuto = "Default";
-  private static final String kCustomAuto = "My Auto";
-  private String _autoSelected;
-  private final SendableChooser<String> _chooser = new SendableChooser<>();
-
   /**
    * Initializing a xbox controller to use for the robot and setting up our
    * subsystems
@@ -56,16 +51,12 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     _imu.calibrate();
-    _chooser.setDefaultOption("Default Auto", kDefaultAuto);
-    _chooser.addOption("My Auto", kCustomAuto);
-    SmartDashboard.putData("Auto choices", _chooser);
     _drivetrain.initialize();
     _stilts.initialize();
     _driveCamera = CameraServer.getInstance().startAutomaticCapture("driver", 0);
     _targetCamera = CameraServer.getInstance().startAutomaticCapture("target", 1);
     selectCamera(SelectedCamera.Driver);
     _compressor.setClosedLoopControl(true);
-
   }
 
   /**
@@ -93,9 +84,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousInit() {
-    _autoSelected = _chooser.getSelected();
-    // _autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
-    System.out.println("Auto selected: " + _autoSelected);
+    teleopInit(); //not using autonomous mode, just teleop
   }
 
   /**
@@ -103,15 +92,12 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void autonomousPeriodic() {
-    switch (_autoSelected) {
-      case kCustomAuto:
-        // Put custom auto code here
-        break;
-      case kDefaultAuto:
-      default:
-        // Put default auto code here
-        break;
-    }
+    teleopPeriodic(); //not using autonomous mode, just teleop
+  }
+
+  @Override
+  public void teleopInit() {
+    _modeSelected = _chooser.getSelected();
   }
 
   /**
