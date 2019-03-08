@@ -64,8 +64,6 @@ public class Drivetrain{
         _leftRear.setInverted(false);
         _rightFront.setInverted(false);
         _rightRear.setInverted(false);
-
-        _commandedHeading = _imu.getAngleZ();
     }
 
     /**
@@ -74,6 +72,6 @@ public class Drivetrain{
      * The other option would be tank drive (one stick per side so two stick control)
      */
     public void arcadeDrive(double speed, double rotation){
-        _drive.arcadeDrive(speed, rotation*0.5);
+        _drive.arcadeDrive(speed, rotation*0.75);
     }
 }
