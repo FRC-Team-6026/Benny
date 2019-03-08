@@ -72,6 +72,6 @@ public class Drivetrain{
      * The other option would be tank drive (one stick per side so two stick control)
      */
     public void arcadeDrive(double speed, double rotation){
-        _drive.arcadeDrive(speed, rotation*0.75);
+        _drive.arcadeDrive(speed, rotation*0.60);
     }
 }

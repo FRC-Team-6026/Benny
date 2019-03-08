@@ -47,7 +47,7 @@ public class Robot extends TimedRobot {
   private UsbCamera _targetCamera;
   private VideoSink _cameraServer;
   private boolean _isStiltMode = false;
-  private final int _halfSecondCycleCount = 50;
+  private final int _cycleDelay = 25;
   private int _solenoidCycleCount = 0;
   private boolean _retrievingHatch = false;
   private boolean _placingHatch = false;
@@ -125,6 +125,7 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     driverPeriodic();
     operatorPeriodic();
+    //testPeriodic();
   }
 
   private void driverPeriodic(){
@@ -157,13 +158,12 @@ public class Robot extends TimedRobot {
 
   private void operatorPeriodic(){
     //Lift auto control
-    //if (_operatorControl.getPOV() == 0){
+    //if (_operatorControl.getY(Hand.kLeft) < -0.5){//up on left stick
     //  _lift.goToTopPosition();
-    //} else if (_operatorControl.getPOV() == 180){
+    //} else if (_operatorControl.getY(Hand.kLeft) > 0.5){//down on left stick
     //  _lift.goToHatchPosition();
     //}
-    SmartDashboard.putNumber("POV", _operatorControl.getPOV());
-    _lift.liftManualControl(deadband(-_operatorControl.getY(Hand.kLeft)));
+    _lift.liftManualControl(deadband(-_operatorControl.getY(Hand.kLeft))*0.5);
 
     if (_operatorControl.getStickButtonPressed(Hand.kLeft)){
       _lift.zeroSensor();
@@ -196,7 +196,7 @@ public class Robot extends TimedRobot {
       _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
     }
 
-    if(_placingHatch && _solenoidCycleCount > _halfSecondCycleCount){
+    if(_placingHatch && _solenoidCycleCount > _cycleDelay){
       _placingHatch = false;
       //retract
       _gripExtension.set(DoubleSolenoid.Value.kForward);
@@ -215,7 +215,7 @@ public class Robot extends TimedRobot {
       _gripSolenoid.set(DoubleSolenoid.Value.kForward);
     }
 
-    if (_retrievingHatch && _solenoidCycleCount > _halfSecondCycleCount){
+    if (_retrievingHatch && _solenoidCycleCount > _cycleDelay){
       _retrievingHatch = false;
       //retract
       _gripExtension.set(DoubleSolenoid.Value.kForward);
