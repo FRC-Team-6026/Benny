@@ -193,6 +193,8 @@ public class Robot extends TimedRobot {
 
     if (_operatorControl.getBButtonReleased()){
       _placingHatch = true;
+      _needToCloseGrabber = false;
+      _retrievingHatch = false;
       _solenoidCycleCount = 0;
       //open grip
       _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
@@ -203,6 +205,7 @@ public class Robot extends TimedRobot {
       //retract
       _gripExtension.set(DoubleSolenoid.Value.kForward);
       _needToCloseGrabber = true;
+      _retrievingHatch = false;
       _solenoidCycleCount = 0;
     }
 
@@ -217,6 +220,8 @@ public class Robot extends TimedRobot {
       //open
       _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
       _extendingToGetHatch = true;
+      _needToCloseGrabber = false;
+      _placingHatch = false;
       _solenoidCycleCount = 0;
     }
 
@@ -228,6 +233,8 @@ public class Robot extends TimedRobot {
 
     if (_operatorControl.getAButtonReleased()){
       _retrievingHatch = true;
+      _needToCloseGrabber = false;
+      _placingHatch = false;
       _solenoidCycleCount = 0;
       //close
       _gripSolenoid.set(DoubleSolenoid.Value.kForward);
