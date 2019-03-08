@@ -47,10 +47,12 @@ public class Robot extends TimedRobot {
   private UsbCamera _targetCamera;
   private VideoSink _cameraServer;
   private boolean _isStiltMode = false;
-  private final int _cycleDelay = 25;
+  private final int _cycleDelay = 20;
   private int _solenoidCycleCount = 0;
   private boolean _retrievingHatch = false;
   private boolean _placingHatch = false;
+  private boolean _extendingToGetHatch = false;
+  private boolean _needToCloseGrabber = false;
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -200,10 +202,26 @@ public class Robot extends TimedRobot {
       _placingHatch = false;
       //retract
       _gripExtension.set(DoubleSolenoid.Value.kForward);
+      _needToCloseGrabber = true;
+      _solenoidCycleCount = 0;
+    }
+
+    if (_needToCloseGrabber && _solenoidCycleCount > 12*_cycleDelay){
+      _needToCloseGrabber = false;
+      //close grip
+      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
     }
 
     //grabbing hatch
     if (_operatorControl.getAButtonPressed()){
+      //open
+      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
+      _extendingToGetHatch = true;
+      _solenoidCycleCount = 0;
+    }
+
+    if (_extendingToGetHatch && _solenoidCycleCount > _cycleDelay){
+      _extendingToGetHatch = false;
       //extend
       _gripExtension.set(DoubleSolenoid.Value.kReverse);
     }
