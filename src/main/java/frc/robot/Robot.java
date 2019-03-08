@@ -140,7 +140,7 @@ public class Robot extends TimedRobot {
       } else if (_driverControl.getBumperPressed(Hand.kRight)){
         _stilts.moveToTopPosition();
       } else if (_driverControl.getAButtonPressed()){
-        _stilts.liftRearLegsStopFront();
+        _stilts.liftRearLegsFrontToTop();
       }
       _stilts.driveWheel(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
     }
@@ -162,6 +162,7 @@ public class Robot extends TimedRobot {
     //} else if (_operatorControl.getPOV() == 180){
     //  _lift.goToHatchPosition();
     //}
+    SmartDashboard.putNumber("POV", _operatorControl.getPOV());
     _lift.liftManualControl(deadband(-_operatorControl.getY(Hand.kLeft)));
 
     if (_operatorControl.getStickButtonPressed(Hand.kLeft)){

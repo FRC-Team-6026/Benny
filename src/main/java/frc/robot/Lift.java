@@ -36,7 +36,7 @@ public class Lift{
      private final int _timeoutMs = 30;
      private final Gains _liftGains = new Gains(0.2,0,0,0.2,0,1.0);
      private final double _hatchPosition = 0;
-     private final double _topPosition = 10000;
+     private final double _topPosition = 5000;
      
      /**
      * This is the contructor to create a drivetrain object.
@@ -54,7 +54,7 @@ public class Lift{
 		 * Invert Motor to have green LEDs when driving Talon Forward / Requesting Postiive Output
 		 * Phase sensor to have positive increment when driving Talon Forward (Green LED)
 		 */
-		_liftMotor.setSensorPhase(false);
+		_liftMotor.setSensorPhase(true);
         _liftMotor.setInverted(true);
 
         /* Set Neutral Mode */

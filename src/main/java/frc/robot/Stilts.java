@@ -55,7 +55,7 @@ public class Stilts{
     private final Gains _positionGains = new Gains(0.2,0,0,0.2,100,0.5);
     private final Gains _differenceGains = new Gains(1.0,0,2.0,0,200,1.0);
     public final static double _neutralDeadband = 0.001;
-	private final double _topPosition = 17000; //Need to set based on testing
+	private final double _topPosition = 10000; //Need to set based on testing
 
     /**
      * This is the contructor to create a stilts object.
@@ -214,9 +214,9 @@ public class Stilts{
 		_frontLegs.follow(_rearLegs, FollowerType.AuxOutput1);
 	}
 
-	public void liftRearLegsStopFront(){
+	public void liftRearLegsFrontToTop(){
 		_rearLegs.set(ControlMode.PercentOutput, -.25);
-		_frontLegs.set(ControlMode.PercentOutput, 0.0);
+		_frontLegs.set(ControlMode.MotionMagic, _topPosition);
 	}
 
 	public void liftBothLegsToZero(){
