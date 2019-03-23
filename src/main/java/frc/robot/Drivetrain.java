@@ -7,11 +7,9 @@ package frc.robot;
  */
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-import com.analog.adis16448.frc.ADIS16448_IMU;
 
 /**
  * This class is just to separate the Drivetrain (motors that move the wheels) code from the
@@ -36,7 +34,6 @@ public class Drivetrain{
     private final WPI_TalonSRX _rightFront = new WPI_TalonSRX(1);
     private final WPI_TalonSRX _rightRear = new WPI_TalonSRX(2);
     private final SpeedControllerGroup _right = new SpeedControllerGroup(_rightFront, _rightRear);
-    private final ADIS16448_IMU _imu;
 
     //The differential drive is a class from WPI and is exactly that. A way to drive a robot with a
     //motor on each side. It takes in the two speed controller groups created above.
@@ -45,8 +42,7 @@ public class Drivetrain{
     /**
      * This is the contructor to create a drivetrain object.
      */
-    public Drivetrain(ADIS16448_IMU imu){
-        _imu = imu;
+    public Drivetrain(){
     }
 
     public void initialize(){

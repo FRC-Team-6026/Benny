@@ -35,7 +35,7 @@ public class Robot extends TimedRobot {
   private final XboxController _driverControl = new XboxController(0);
   private final XboxController _operatorControl = new XboxController(1);
   private final ADIS16448_IMU _imu = new ADIS16448_IMU();
-  private final Drivetrain _drivetrain = new Drivetrain(_imu);
+  private final Drivetrain _drivetrain = new Drivetrain();
   private final Stilts _stilts = new Stilts();
   private final Lift _lift = new Lift();
   private final Compressor _compressor = new Compressor(10);
