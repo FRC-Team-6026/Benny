@@ -38,22 +38,14 @@ public class Robot extends TimedRobot {
   private final Drivetrain _drivetrain = new Drivetrain();
   private final Stilts _stilts = new Stilts();
   private final Lift _lift = new Lift();
-  private final Compressor _compressor = new Compressor(10);
-  private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,2,3);
-  private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,4,5);
-  private final DoubleSolenoid _gripExtension = new DoubleSolenoid(10,0,1);
+  private final Pneumatics _pneumatics = new Pneumatics(_operatorControl);
   private boolean _driveCameraSelected = true;
   private UsbCamera _driveCamera;
   private UsbCamera _targetCamera;
   private VideoSink _cameraServer;
   private boolean _isStiltMode = false;
   private boolean _isReverseMode = false;
-  private final int _cycleDelay = 20;
-  private int _solenoidCycleCount = 0;
-  private boolean _retrievingHatch = false;
-  private boolean _placingHatch = false;
-  private boolean _extendingToGetHatch = false;
-  private boolean _needToCloseGrabber = false;
+  
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -70,7 +62,7 @@ public class Robot extends TimedRobot {
     _driveCamera.setConnectionStrategy(ConnectionStrategy.kKeepOpen);
     _targetCamera.setConnectionStrategy(ConnectionStrategy.kKeepOpen);
     _cameraServer.setSource(_driveCamera);
-    _compressor.setClosedLoopControl(true);
+    _pneumatics.initialize();
   }
 
   /**
@@ -116,10 +108,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    //close
-    _gripSolenoid.set(DoubleSolenoid.Value.kForward);
-    //retract
-    _gripExtension.set(DoubleSolenoid.Value.kForward);
+    _pneumatics.initializeGrip();
   }
 
   /**
@@ -177,7 +166,7 @@ public class Robot extends TimedRobot {
       _lift.zeroSensor();
     }
 
-    solenoidControls();
+    _pneumatics.periodic();
   }
 
   private double deadband(double input){
@@ -185,100 +174,6 @@ public class Robot extends TimedRobot {
       return 0;
     } else {
       return input;
-    }
-  }
-
-  private void solenoidControls()
-  {
-    _solenoidCycleCount++;
-
-    //manual controls
-    if (_operatorControl.getYButtonPressed()){
-      _placingHatch = false;
-      _retrievingHatch = false;
-      _needToCloseGrabber = false;
-      _extendingToGetHatch = false;
-      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
-    }
-
-    if (_operatorControl.getXButtonPressed()){
-      _placingHatch = false;
-      _retrievingHatch = false;
-      _needToCloseGrabber = false;
-      _extendingToGetHatch = false;
-      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
-    }
-
-    //placing hatch
-    if (_operatorControl.getBButtonPressed()){
-      //extend
-      _gripExtension.set(DoubleSolenoid.Value.kReverse);
-    }
-
-    if (_operatorControl.getBButtonReleased()){
-      _placingHatch = true;
-      _needToCloseGrabber = false;
-      _retrievingHatch = false;
-      _extendingToGetHatch = false;
-      _solenoidCycleCount = 0;
-      //open grip
-      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
-    }
-
-    if(_placingHatch && _solenoidCycleCount > _cycleDelay){
-      _placingHatch = false;
-      //retract
-      _gripExtension.set(DoubleSolenoid.Value.kForward);
-      _needToCloseGrabber = true;
-      _retrievingHatch = false;
-      _extendingToGetHatch = false;
-      _solenoidCycleCount = 0;
-    }
-
-    if (_needToCloseGrabber && _solenoidCycleCount > 12*_cycleDelay){
-      _needToCloseGrabber = false;
-      //close grip
-      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
-    }
-
-    //grabbing hatch
-    if (_operatorControl.getAButtonPressed()){
-      //open
-      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
-      _extendingToGetHatch = true;
-      _needToCloseGrabber = false;
-      _placingHatch = false;
-      _retrievingHatch = false;
-      _solenoidCycleCount = 0;
-    }
-
-    if (_extendingToGetHatch && _solenoidCycleCount > _cycleDelay){
-      _extendingToGetHatch = false;
-      //extend
-      _gripExtension.set(DoubleSolenoid.Value.kReverse);
-    }
-
-    if (_operatorControl.getAButtonReleased()){
-      _retrievingHatch = true;
-      _needToCloseGrabber = false;
-      _placingHatch = false;
-      _extendingToGetHatch = false;
-      _solenoidCycleCount = 0;
-      //close
-      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
-    }
-
-    if (_retrievingHatch && _solenoidCycleCount > _cycleDelay){
-      _retrievingHatch = false;
-      //retract
-      _gripExtension.set(DoubleSolenoid.Value.kForward);
-    }
-
-    //ball holder control
-    if (_operatorControl.getBumperPressed(Hand.kRight)){
-      _ballHolder.set(DoubleSolenoid.Value.kForward);
-    } else if (_operatorControl.getBumperPressed(Hand.kLeft)){
-      _ballHolder.set(DoubleSolenoid.Value.kReverse);
     }
   }
 
@@ -302,7 +197,7 @@ public class Robot extends TimedRobot {
     var liftOutput = deadband(-_operatorControl.getY(Hand.kLeft));
     _lift.liftManualControl(liftOutput);
 
-    solenoidControls();
+    _pneumatics.periodic();
 
     if(_driverControl.getStartButtonPressed()){
       _driveCameraSelected = !_driveCameraSelected;
