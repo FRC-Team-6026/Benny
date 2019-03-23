@@ -47,15 +47,13 @@ public class Stilts{
 	private final WPI_TalonSRX _driveWheelLeft = new WPI_TalonSRX(9);
 
     private final int _positionSlot = 0;
-    private final int _differenceSlot = 1;
     private final int _pidPosition = 0;
-    private final int _pidDifference = 1;
-    private final int _remote0 = 0;
     private final int _timeoutMs = 30;
     private final Gains _positionGains = new Gains(0.2,0,0,0.2,100,0.5);
-    private final Gains _differenceGains = new Gains(1.0,0,2.0,0,200,1.0);
     public final static double _neutralDeadband = 0.001;
 	private final double _topPosition = 10000; //Need to set based on testing
+	private double _rearTarget = 0;
+	private double _frontTarget = 0;
 
     /**
      * This is the contructor to create a stilts object.
@@ -81,59 +79,28 @@ public class Stilts{
 		/** Feedback Sensor Configuration */
 		
 		/* Configure the left Talon's selected sensor as local QuadEncoder */
-		_frontLegs.configSelectedFeedbackSensor(	FeedbackDevice.QuadEncoder,				// Local Feedback Source
+		_frontLegs.configSelectedFeedbackSensor(	FeedbackDevice.CTRE_MagEncoder_Relative,	// Local Feedback Source
 													_pidPosition,					// PID Slot for Source [0, 1]
 													_timeoutMs);					// Configuration Timeout
 
 		/* Configure the Remote Talon's selected sensor as a remote sensor for the right Talon */
-		_rearLegs.configRemoteFeedbackFilter(_frontLegs.getDeviceID(),					// Device ID of Source
-												RemoteSensorSource.TalonSRX_SelectedSensor,	// Remote Feedback Source
-												_remote0,							// Source number [0, 1]
-												_timeoutMs);						// Configuration Timeout
+		_rearLegs.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative,		// Local feedback source
+												_pidPosition,	// PID Slot for source
+												_timeoutMs);	// Configuration Timeout
 		
-		/* Setup Sum signal to be used for Distance */
-		_rearLegs.configSensorTerm(SensorTerm.Sum0, FeedbackDevice.RemoteSensor0, _timeoutMs);				// Feedback Device of Remote Talon
-		_rearLegs.configSensorTerm(SensorTerm.Sum1, FeedbackDevice.CTRE_MagEncoder_Relative, _timeoutMs);	// Quadrature Encoder of current Talon
-		
-		/* Setup Difference signal to be used for Turn */
-		_rearLegs.configSensorTerm(SensorTerm.Diff1, FeedbackDevice.RemoteSensor0, _timeoutMs);
-		_rearLegs.configSensorTerm(SensorTerm.Diff0, FeedbackDevice.CTRE_MagEncoder_Relative, _timeoutMs);
-		
-		/* Configure Sum [Sum of both QuadEncoders] to be used for Primary PID Index */
-		_rearLegs.configSelectedFeedbackSensor(	FeedbackDevice.SensorSum, 
-													_pidPosition,
-													_timeoutMs);
-		
-		/* Scale Feedback by 0.5 to half the sum of Distance */
-		_rearLegs.configSelectedFeedbackCoefficient(	0.5, 						// Coefficient
-														_pidPosition,		// PID Slot of Source 
-														_timeoutMs);		// Configuration Timeout
-		
-		/* Configure Difference [Difference between both QuadEncoders] to be used for Auxiliary PID Index */
-		_rearLegs.configSelectedFeedbackSensor(	FeedbackDevice.SensorDifference, 
-													_pidDifference, 
-													_timeoutMs);
-		
-		/* Scale the Feedback Sensor using a coefficient */
-		_rearLegs.configSelectedFeedbackCoefficient(	1,
-														_pidDifference, 
-														_timeoutMs);
 		/* Configure output and sensor direction */
-		_frontLegs.setInverted(false);
-		_frontLegs.setSensorPhase(true);
+		_frontLegs.setInverted(true);
+		_frontLegs.setSensorPhase(false);
 		_rearLegs.setInverted(true);
 		_rearLegs.setSensorPhase(true);
-		
-		/* Set status frame periods to ensure we don't have stale data */
-		_rearLegs.setStatusFramePeriod(StatusFrame.Status_12_Feedback1, 20, _timeoutMs);
-		_rearLegs.setStatusFramePeriod(StatusFrame.Status_13_Base_PIDF0, 20, _timeoutMs);
-		_rearLegs.setStatusFramePeriod(StatusFrame.Status_14_Turn_PIDF1, 20, _timeoutMs);
-		_rearLegs.setStatusFramePeriod(StatusFrame.Status_10_Targets, 20, _timeoutMs);
-		_frontLegs.setStatusFramePeriod(StatusFrame.Status_2_Feedback0, 5, _timeoutMs);
 
 		/* Configure neutral deadband */
 		_rearLegs.configNeutralDeadband(_neutralDeadband, _timeoutMs);
 		_frontLegs.configNeutralDeadband(_neutralDeadband, _timeoutMs);
+
+		/* Set relevant frame periods to be at least as fast as periodic rate */
+		_rearLegs.setStatusFramePeriod(StatusFrameEnhanced.Status_13_Base_PIDF0, 10, _timeoutMs);
+        _rearLegs.setStatusFramePeriod(StatusFrameEnhanced.Status_10_MotionMagic, 10, _timeoutMs);
 		
 		/* Motion Magic Configurations */
 		_rearLegs.configMotionAcceleration(3000, _timeoutMs);
@@ -157,14 +124,14 @@ public class Stilts{
 		_rearLegs.configClosedLoopPeakOutput(_positionSlot, _positionGains.PeakOutput, _timeoutMs);
 		_rearLegs.configAllowableClosedloopError(_positionSlot, 0, _timeoutMs);
 
-		/* FPID Gains for turn servo */
-		_rearLegs.config_kP(_differenceSlot, _differenceGains.P, _timeoutMs);
-		_rearLegs.config_kI(_differenceSlot, _differenceGains.I, _timeoutMs);
-		_rearLegs.config_kD(_differenceSlot, _differenceGains.D, _timeoutMs);
-		_rearLegs.config_kF(_differenceSlot, _differenceGains.F, _timeoutMs);
-		_rearLegs.config_IntegralZone(_differenceSlot, (int)_differenceGains.IZone, _timeoutMs);
-		_rearLegs.configClosedLoopPeakOutput(_differenceSlot, _differenceGains.PeakOutput, _timeoutMs);
-		_rearLegs.configAllowableClosedloopError(_differenceSlot, 0, _timeoutMs);
+		/* FPID Gains for distance servo */
+		_frontLegs.config_kP(_positionSlot, _positionGains.P, _timeoutMs);
+		_frontLegs.config_kI(_positionSlot, _positionGains.I, _timeoutMs);
+		_frontLegs.config_kD(_positionSlot, _positionGains.D, _timeoutMs);
+		_frontLegs.config_kF(_positionSlot, _positionGains.F, _timeoutMs);
+		_frontLegs.config_IntegralZone(_positionSlot, _positionGains.IZone, _timeoutMs);
+		_frontLegs.configClosedLoopPeakOutput(_positionSlot, _positionGains.PeakOutput, _timeoutMs);
+		_frontLegs.configAllowableClosedloopError(_positionSlot, 0, _timeoutMs);
 
 		/**
 		 * 1ms per loop.  PID loop can be slowed down if need be.
@@ -177,20 +144,11 @@ public class Stilts{
 		_rearLegs.configClosedLoopPeriod(0, closedLoopTimeMs, _timeoutMs);
 		_rearLegs.configClosedLoopPeriod(1, closedLoopTimeMs, _timeoutMs);
 
-		/**
-		 * configAuxPIDPolarity(boolean invert, int timeoutMs)
-		 * false means talon's local output is PID0 + PID1, and other side Talon is PID0 - PID1
-		 * true means talon's local output is PID0 - PID1, and other side Talon is PID0 + PID1
-		 */
-		_rearLegs.configAuxPIDPolarity(false, _timeoutMs);
-
-		/* Initialize */
-		_rearLegs.setStatusFramePeriod(StatusFrameEnhanced.Status_10_Targets, 10);
 		zeroSensors();
 
 		/* Determine which slot affects which PID */
 		_rearLegs.selectProfileSlot(_positionSlot, _pidPosition);
-		_rearLegs.selectProfileSlot(_differenceSlot, _pidDifference);
+		_frontLegs.selectProfileSlot(_positionSlot, _pidPosition);
 	}
 	
 	public void smartDashboardDisplay(){
@@ -198,30 +156,26 @@ public class Stilts{
 		var frontPosition = _frontLegs.getSensorCollection().getQuadraturePosition();
 		SmartDashboard.putNumber("rear encoder", rearPosition);
 		SmartDashboard.putNumber("front encoder", frontPosition);
+		SmartDashboard.putNumber("rear target", _rearTarget);
+		SmartDashboard.putNumber("front target", _frontTarget);
 	}
 
-    public void driveRearLegs(double output){
+    public void driveRearLegsEncoder(double output){
+		_rearTarget = output * 20;
+		_rearLegs.set(ControlMode.MotionMagic, _rearTarget);
+	}
+
+	public void driveFrontLegsEncoder(double output){
+		_frontTarget = output * 20;
+		_frontLegs.set(ControlMode.MotionMagic, _frontTarget);
+	}
+
+	public void driveRearLegs(double output){
 		_rearLegs.set(ControlMode.PercentOutput, output);
 	}
 
 	public void driveFrontLegs(double output){
 		_frontLegs.set(ControlMode.PercentOutput, output);
-	}
-	
-	public void moveToTopPosition(){
-		/* Configured for MotionMagic on Quad Encoders' Sum and Auxiliary PID on Quad Encoders' Difference */
-		_rearLegs.set(ControlMode.MotionMagic, _topPosition, DemandType.AuxPID, 0);
-		_frontLegs.follow(_rearLegs, FollowerType.AuxOutput1);
-	}
-
-	public void liftRearLegsFrontToTop(){
-		_rearLegs.set(ControlMode.PercentOutput, -.25);
-		_frontLegs.set(ControlMode.MotionMagic, _topPosition);
-	}
-
-	public void liftBothLegsToZero(){
-		_rearLegs.set(ControlMode.MotionMagic, 0, DemandType.AuxPID, 0);
-		_frontLegs.follow(_rearLegs, FollowerType.AuxOutput1);
 	}
 
     public void driveWheel(double output){
