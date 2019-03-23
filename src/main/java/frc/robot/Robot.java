@@ -47,6 +47,7 @@ public class Robot extends TimedRobot {
   private UsbCamera _targetCamera;
   private VideoSink _cameraServer;
   private boolean _isStiltMode = false;
+  private boolean _isReverseMode = false;
   private final int _cycleDelay = 20;
   private int _solenoidCycleCount = 0;
   private boolean _retrievingHatch = false;
@@ -83,6 +84,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     SmartDashboard.putBoolean("Stilt mode", _isStiltMode);
+    SmartDashboard.putBoolean("Reverse mode", _isReverseMode);
     SmartDashboard.putNumber("Heading", _imu.getAngleZ());
     _stilts.smartDashboardDisplay();
     _lift.smartDashboardDisplay();
@@ -131,20 +133,24 @@ public class Robot extends TimedRobot {
   }
 
   private void driverPeriodic(){
-    _drivetrain.arcadeDrive(-_driverControl.getY(Hand.kLeft), _driverControl.getX(Hand.kRight));
+    var speed = _isReverseMode ? _driverControl.getY(Hand.kLeft) : -_driverControl.getY(Hand.kLeft);
+    _drivetrain.arcadeDrive(speed, _driverControl.getX(Hand.kRight));
 
     if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
       _isStiltMode = !_isStiltMode;
     }
 
+    var leftBumper = _driverControl.getBumper(Hand.kLeft);
+    var rightBumper = _driverControl.getBumper(Hand.kRight);
+    var leftBumperPressed = _driverControl.getBumperPressed(Hand.kLeft);
+    var rightBumperPressed = _driverControl.getBumperPressed(Hand.kRight);
+    if ((leftBumper && rightBumperPressed) || (rightBumper && leftBumperPressed)){
+      _isReverseMode = !_isReverseMode;
+    }
+
     if(_isStiltMode){
-      if (_driverControl.getBumperPressed(Hand.kLeft)){
-        _stilts.liftBothLegsToZero();
-      } else if (_driverControl.getBumperPressed(Hand.kRight)){
-        _stilts.moveToTopPosition();
-      } else if (_driverControl.getAButtonPressed()){
-        _stilts.liftRearLegsFrontToTop();
-      }
+      _stilts.driveRearLegs(deadband(-_driverControl.getY(Hand.kLeft)*0.5));
+      _stilts.driveFrontLegs(deadband(_driverControl.getY(Hand.kRight)*0.5));
       _stilts.driveWheel(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
     }
 
@@ -185,6 +191,24 @@ public class Robot extends TimedRobot {
   private void solenoidControls()
   {
     _solenoidCycleCount++;
+
+    //manual controls
+    if (_operatorControl.getYButtonPressed()){
+      _placingHatch = false;
+      _retrievingHatch = false;
+      _needToCloseGrabber = false;
+      _extendingToGetHatch = false;
+      _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
+    }
+
+    if (_operatorControl.getXButtonPressed()){
+      _placingHatch = false;
+      _retrievingHatch = false;
+      _needToCloseGrabber = false;
+      _extendingToGetHatch = false;
+      _gripSolenoid.set(DoubleSolenoid.Value.kForward);
+    }
+
     //placing hatch
     if (_operatorControl.getBButtonPressed()){
       //extend
@@ -195,6 +219,7 @@ public class Robot extends TimedRobot {
       _placingHatch = true;
       _needToCloseGrabber = false;
       _retrievingHatch = false;
+      _extendingToGetHatch = false;
       _solenoidCycleCount = 0;
       //open grip
       _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
@@ -206,6 +231,7 @@ public class Robot extends TimedRobot {
       _gripExtension.set(DoubleSolenoid.Value.kForward);
       _needToCloseGrabber = true;
       _retrievingHatch = false;
+      _extendingToGetHatch = false;
       _solenoidCycleCount = 0;
     }
 
@@ -222,6 +248,7 @@ public class Robot extends TimedRobot {
       _extendingToGetHatch = true;
       _needToCloseGrabber = false;
       _placingHatch = false;
+      _retrievingHatch = false;
       _solenoidCycleCount = 0;
     }
 
@@ -235,6 +262,7 @@ public class Robot extends TimedRobot {
       _retrievingHatch = true;
       _needToCloseGrabber = false;
       _placingHatch = false;
+      _extendingToGetHatch = false;
       _solenoidCycleCount = 0;
       //close
       _gripSolenoid.set(DoubleSolenoid.Value.kForward);
@@ -264,8 +292,8 @@ public class Robot extends TimedRobot {
     }
 
     if(_isStiltMode){
-      _stilts.driveRearLegs(-_driverControl.getY(Hand.kLeft));
-      _stilts.driveFrontLegs(-_driverControl.getY(Hand.kRight));
+      _stilts.driveRearLegsEncoder(-_driverControl.getY(Hand.kLeft));
+      _stilts.driveFrontLegsEncoder(-_driverControl.getY(Hand.kRight));
       _stilts.driveWheel(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
     } else {
       _drivetrain.arcadeDrive(-_driverControl.getY(Hand.kLeft), _driverControl.getX(Hand.kRight));
