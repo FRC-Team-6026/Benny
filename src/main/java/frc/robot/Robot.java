@@ -38,7 +38,7 @@ public class Robot extends TimedRobot {
   private final Drivetrain _drivetrain = new Drivetrain();
   private final Stilts _stilts = new Stilts();
   private final Lift _lift = new Lift();
-  private final Pneumatics _pneumatics = new Pneumatics(_operatorControl);
+  private final HatchGrabber _hatchGrabber = new HatchGrabber(_operatorControl);
   private boolean _driveCameraSelected = true;
   private UsbCamera _driveCamera;
   private UsbCamera _targetCamera;
@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
     _driveCamera.setConnectionStrategy(ConnectionStrategy.kKeepOpen);
     _targetCamera.setConnectionStrategy(ConnectionStrategy.kKeepOpen);
     _cameraServer.setSource(_driveCamera);
-    _pneumatics.initialize();
+    _hatchGrabber.initialize();
   }
 
   /**
@@ -108,7 +108,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    _pneumatics.initializeGrip();
+    _hatchGrabber.initializeGrip();
   }
 
   /**
@@ -166,7 +166,7 @@ public class Robot extends TimedRobot {
       _lift.zeroSensor();
     }
 
-    _pneumatics.periodic();
+    _hatchGrabber.periodic();
   }
 
   private double deadband(double input){
@@ -197,7 +197,7 @@ public class Robot extends TimedRobot {
     var liftOutput = deadband(-_operatorControl.getY(Hand.kLeft));
     _lift.liftManualControl(liftOutput);
 
-    _pneumatics.periodic();
+    _hatchGrabber.periodic();
 
     if(_driverControl.getStartButtonPressed()){
       _driveCameraSelected = !_driveCameraSelected;
