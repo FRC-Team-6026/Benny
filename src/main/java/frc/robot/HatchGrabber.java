@@ -3,22 +3,17 @@ package frc.robot;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.GenericHID.Hand;
 
-public class Pneumatics{
+public class HatchGrabber{
     private final Compressor _compressor = new Compressor(10);
     private final DoubleSolenoid _gripSolenoid = new DoubleSolenoid(10,2,3);
-    private final DoubleSolenoid _ballHolder = new DoubleSolenoid(10,4,5);
     private final DoubleSolenoid _gripExtension = new DoubleSolenoid(10,0,1);
     private final int _cycleDelay = 20;
     private final XboxController _operatorControl;
     private int _solenoidCycleCount = 0;
-    private boolean _retrievingHatch = false;
-    private boolean _placingHatch = false;
-    private boolean _extendingToGetHatch = false;
-    private boolean _needToCloseGrabber = false;
+    private GrabberState _grabberState = GrabberState.None;
 
-    public Pneumatics(XboxController operatorControl) {
+    public HatchGrabber(XboxController operatorControl) {
         _operatorControl = operatorControl;
     }
 
@@ -37,18 +32,12 @@ public class Pneumatics{
     
         //manual controls
         if (_operatorControl.getYButtonPressed()){
-          _placingHatch = false;
-          _retrievingHatch = false;
-          _needToCloseGrabber = false;
-          _extendingToGetHatch = false;
+          _grabberState = GrabberState.None;
           openGrip();
         }
     
         if (_operatorControl.getXButtonPressed()){
-          _placingHatch = false;
-          _retrievingHatch = false;
-          _needToCloseGrabber = false;
-          _extendingToGetHatch = false;
+          _grabberState = GrabberState.None;
           closeGrip();
         }
     
@@ -58,63 +47,43 @@ public class Pneumatics{
         }
     
         if (_operatorControl.getBButtonReleased()){
-          _placingHatch = true;
-          _needToCloseGrabber = false;
-          _retrievingHatch = false;
-          _extendingToGetHatch = false;
+          _grabberState = GrabberState.PlacingHatch;
           _solenoidCycleCount = 0;
           openGrip();
         }
     
-        if(_placingHatch && _solenoidCycleCount > _cycleDelay){
-          _placingHatch = false;
+        if(_grabberState == GrabberState.PlacingHatch && _solenoidCycleCount > _cycleDelay){
           retractGrip();
-          _needToCloseGrabber = true;
-          _retrievingHatch = false;
-          _extendingToGetHatch = false;
+          _grabberState = GrabberState.NeedToCloseGrabber;
           _solenoidCycleCount = 0;
         }
     
-        if (_needToCloseGrabber && _solenoidCycleCount > 12*_cycleDelay){
-          _needToCloseGrabber = false;
+        if (_grabberState == GrabberState.NeedToCloseGrabber && _solenoidCycleCount > 12*_cycleDelay){
+          _grabberState = GrabberState.None;
           closeGrip();
         }
     
         //grabbing hatch
         if (_operatorControl.getAButtonPressed()){
-          //open
-          _gripSolenoid.set(DoubleSolenoid.Value.kReverse);
-          _extendingToGetHatch = true;
-          _needToCloseGrabber = false;
-          _placingHatch = false;
-          _retrievingHatch = false;
+          openGrip();
+          _grabberState = GrabberState.ExtendingToGetHatch;
           _solenoidCycleCount = 0;
         }
     
-        if (_extendingToGetHatch && _solenoidCycleCount > _cycleDelay){
-          _extendingToGetHatch = false;
+        if (_grabberState == GrabberState.ExtendingToGetHatch && _solenoidCycleCount > _cycleDelay){
+          _grabberState = GrabberState.None;
           extendGrip();
         }
     
         if (_operatorControl.getAButtonReleased()){
-          _retrievingHatch = true;
-          _needToCloseGrabber = false;
-          _placingHatch = false;
-          _extendingToGetHatch = false;
+          _grabberState = GrabberState.RetrievingHatch;
           _solenoidCycleCount = 0;
           closeGrip();
         }
     
-        if (_retrievingHatch && _solenoidCycleCount > _cycleDelay){
-          _retrievingHatch = false;
+        if (_grabberState == GrabberState.RetrievingHatch && _solenoidCycleCount > _cycleDelay){
+          _grabberState = GrabberState.None;
           retractGrip();
-        }
-    
-        //ball holder control
-        if (_operatorControl.getBumperPressed(Hand.kRight)){
-          _ballHolder.set(DoubleSolenoid.Value.kForward);
-        } else if (_operatorControl.getBumperPressed(Hand.kLeft)){
-          _ballHolder.set(DoubleSolenoid.Value.kReverse);
         }
     }
 
@@ -132,5 +101,13 @@ public class Pneumatics{
 
     private void retractGrip(){
         _gripExtension.set(DoubleSolenoid.Value.kForward);
+    }
+
+    private enum GrabberState {
+      None,
+      RetrievingHatch,
+      PlacingHatch,
+      ExtendingToGetHatch,
+      NeedToCloseGrabber
     }
 }
