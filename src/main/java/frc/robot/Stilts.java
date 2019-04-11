@@ -6,7 +6,6 @@ package frc.robot;
  * com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
  */
 
-import com.ctre.phoenix.ParamEnum;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
@@ -34,8 +33,6 @@ public class Stilts{
      //Id's can be viewed and set from the Pheonix Tuner software.
     private final WPI_TalonSRX _frontLegs = new WPI_TalonSRX(6);
     private final WPI_TalonSRX _rearLegs = new WPI_TalonSRX(5);
-	private final WPI_TalonSRX _driveWheelRight = new WPI_TalonSRX(8);
-	private final WPI_TalonSRX _driveWheelLeft = new WPI_TalonSRX(9);
 
     private final int _positionSlot = 0;
     private final int _pidPosition = 0;
@@ -55,13 +52,8 @@ public class Stilts{
     public void initialize(){
 		SmartDashboard.putNumber("Top position for stilts", _topPosition);
         /* Factory Default all hardware to prevent unexpected behaviour */
-		_rearLegs.configFactoryDefault();
 		_frontLegs.configFactoryDefault();
-		_driveWheelRight.configFactoryDefault();
-		_driveWheelLeft.configFactoryDefault();
-
-		_driveWheelRight.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
-		_driveWheelLeft.configSetParameter(ParamEnum.eOpenloopRamp, 0.2, 0, 0);
+		_rearLegs.configFactoryDefault();
 		
 		/* Set Neutral Mode */
 		_frontLegs.setNeutralMode(NeutralMode.Brake);
@@ -69,31 +61,35 @@ public class Stilts{
 		
 		/** Feedback Sensor Configuration */
 		
-		/* Configure the left Talon's selected sensor as local QuadEncoder */
-		_frontLegs.configSelectedFeedbackSensor(	FeedbackDevice.CTRE_MagEncoder_Relative,	// Local Feedback Source
+		/* Configure the Talon's selected sensor as local QuadEncoder */
+		_frontLegs.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative,	// Local Feedback Source
 													_pidPosition,					// PID Slot for Source [0, 1]
 													_timeoutMs);					// Configuration Timeout
 
-		/* Configure the Remote Talon's selected sensor as a remote sensor for the right Talon */
+		/* Configure the Talon's selected sensor as local QuadEncoder */
 		_rearLegs.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative,		// Local feedback source
 												_pidPosition,	// PID Slot for source
 												_timeoutMs);	// Configuration Timeout
 		
 		/* Configure output and sensor direction */
-		_frontLegs.setInverted(true);
+		_frontLegs.setInverted(false);
 		_frontLegs.setSensorPhase(false);
-		_rearLegs.setInverted(true);
-		_rearLegs.setSensorPhase(true);
+		_rearLegs.setInverted(false);
+		_rearLegs.setSensorPhase(false);
 
 		/* Configure neutral deadband */
-		_rearLegs.configNeutralDeadband(_neutralDeadband, _timeoutMs);
 		_frontLegs.configNeutralDeadband(_neutralDeadband, _timeoutMs);
+		_rearLegs.configNeutralDeadband(_neutralDeadband, _timeoutMs);
 
 		/* Set relevant frame periods to be at least as fast as periodic rate */
+		_frontLegs.setStatusFramePeriod(StatusFrameEnhanced.Status_13_Base_PIDF0, 10, _timeoutMs);
+        _frontLegs.setStatusFramePeriod(StatusFrameEnhanced.Status_10_MotionMagic, 10, _timeoutMs);
 		_rearLegs.setStatusFramePeriod(StatusFrameEnhanced.Status_13_Base_PIDF0, 10, _timeoutMs);
         _rearLegs.setStatusFramePeriod(StatusFrameEnhanced.Status_10_MotionMagic, 10, _timeoutMs);
 		
 		/* Motion Magic Configurations */
+		_frontLegs.configMotionAcceleration(3000, _timeoutMs);
+		_frontLegs.configMotionCruiseVelocity(10000, _timeoutMs);
 		_rearLegs.configMotionAcceleration(3000, _timeoutMs);
 		_rearLegs.configMotionCruiseVelocity(10000, _timeoutMs);
 
@@ -107,15 +103,6 @@ public class Stilts{
 		_rearLegs.configPeakOutputReverse(-1.0, _timeoutMs);
 
 		/* FPID Gains for distance servo */
-		_rearLegs.config_kP(_positionSlot, _positionGains.P, _timeoutMs);
-		_rearLegs.config_kI(_positionSlot, _positionGains.I, _timeoutMs);
-		_rearLegs.config_kD(_positionSlot, _positionGains.D, _timeoutMs);
-		_rearLegs.config_kF(_positionSlot, _positionGains.F, _timeoutMs);
-		_rearLegs.config_IntegralZone(_positionSlot, _positionGains.IZone, _timeoutMs);
-		_rearLegs.configClosedLoopPeakOutput(_positionSlot, _positionGains.PeakOutput, _timeoutMs);
-		_rearLegs.configAllowableClosedloopError(_positionSlot, 0, _timeoutMs);
-
-		/* FPID Gains for distance servo */
 		_frontLegs.config_kP(_positionSlot, _positionGains.P, _timeoutMs);
 		_frontLegs.config_kI(_positionSlot, _positionGains.I, _timeoutMs);
 		_frontLegs.config_kD(_positionSlot, _positionGains.D, _timeoutMs);
@@ -124,22 +111,20 @@ public class Stilts{
 		_frontLegs.configClosedLoopPeakOutput(_positionSlot, _positionGains.PeakOutput, _timeoutMs);
 		_frontLegs.configAllowableClosedloopError(_positionSlot, 0, _timeoutMs);
 
-		/**
-		 * 1ms per loop.  PID loop can be slowed down if need be.
-		 * For example,
-		 * - if sensor updates are too slow
-		 * - sensor deltas are very small per update, so derivative error never gets large enough to be useful.
-		 * - sensor movement is very slow causing the derivative error to be near zero.
-		 */
-		int closedLoopTimeMs = 1;
-		_rearLegs.configClosedLoopPeriod(0, closedLoopTimeMs, _timeoutMs);
-		_rearLegs.configClosedLoopPeriod(1, closedLoopTimeMs, _timeoutMs);
+		/* FPID Gains for distance servo */
+		_rearLegs.config_kP(_positionSlot, _positionGains.P, _timeoutMs);
+		_rearLegs.config_kI(_positionSlot, _positionGains.I, _timeoutMs);
+		_rearLegs.config_kD(_positionSlot, _positionGains.D, _timeoutMs);
+		_rearLegs.config_kF(_positionSlot, _positionGains.F, _timeoutMs);
+		_rearLegs.config_IntegralZone(_positionSlot, _positionGains.IZone, _timeoutMs);
+		_rearLegs.configClosedLoopPeakOutput(_positionSlot, _positionGains.PeakOutput, _timeoutMs);
+		_rearLegs.configAllowableClosedloopError(_positionSlot, 0, _timeoutMs);
 
 		zeroSensors();
 
 		/* Determine which slot affects which PID */
-		_rearLegs.selectProfileSlot(_positionSlot, _pidPosition);
 		_frontLegs.selectProfileSlot(_positionSlot, _pidPosition);
+		_rearLegs.selectProfileSlot(_positionSlot, _pidPosition);
 	}
 	
 	public void smartDashboardDisplay(){
@@ -152,12 +137,12 @@ public class Stilts{
 	}
 
     public void driveRearLegsEncoder(double output){
-		_rearTarget = output * 20;
+		_rearTarget = output * 200;
 		_rearLegs.set(ControlMode.MotionMagic, _rearTarget);
 	}
 
 	public void driveFrontLegsEncoder(double output){
-		_frontTarget = output * 20;
+		_frontTarget = output * 200;
 		_frontLegs.set(ControlMode.MotionMagic, _frontTarget);
 	}
 
@@ -168,11 +153,6 @@ public class Stilts{
 	public void driveFrontLegs(double output){
 		_frontLegs.set(ControlMode.PercentOutput, output);
 	}
-
-    public void driveWheel(double output){
-		_driveWheelRight.set(ControlMode.PercentOutput, output);
-		_driveWheelLeft.set(ControlMode.PercentOutput, output);
-    }
 
     /** Zero quadrature encoders on Talon */
 	public void zeroSensors() {
