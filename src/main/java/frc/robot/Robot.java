@@ -122,8 +122,8 @@ public class Robot extends TimedRobot {
   }
 
   private void driverPeriodic(){
-    var speed = _isSlowSpeedMode ? -_driverControl.getY(Hand.kLeft) * 0.5 : -_driverControl.getY(Hand.kLeft);
-    var rotation = _isSlowSpeedMode ? _driverControl.getX(Hand.kRight) * 0.5 : _driverControl.getX(Hand.kRight);
+    var speed = _isSlowSpeedMode ? -_driverControl.getY(Hand.kLeft) * 0.6 : -_driverControl.getY(Hand.kLeft);
+    var rotation = _isSlowSpeedMode ? _driverControl.getX(Hand.kRight) * 0.6 : _driverControl.getX(Hand.kRight);
     _drivetrain.arcadeDrive(speed, rotation);
 
     if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
