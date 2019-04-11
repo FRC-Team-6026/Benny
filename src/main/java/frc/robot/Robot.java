@@ -44,7 +44,7 @@ public class Robot extends TimedRobot {
   private UsbCamera _targetCamera;
   private VideoSink _cameraServer;
   private boolean _isStiltMode = false;
-  private boolean _isReverseMode = false;
+  private boolean _isSlowSpeedMode = false;
   
   /**
    * This function is run when the robot is first started up and should be
@@ -76,7 +76,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     SmartDashboard.putBoolean("Stilt mode", _isStiltMode);
-    SmartDashboard.putBoolean("Reverse mode", _isReverseMode);
+    SmartDashboard.putBoolean("Slow speed mode", _isSlowSpeedMode);
     SmartDashboard.putNumber("Heading", _imu.getAngleZ());
     _stilts.smartDashboardDisplay();
     _lift.smartDashboardDisplay();
@@ -122,8 +122,9 @@ public class Robot extends TimedRobot {
   }
 
   private void driverPeriodic(){
-    var speed = _isReverseMode ? _driverControl.getY(Hand.kLeft) : -_driverControl.getY(Hand.kLeft);
-    _drivetrain.arcadeDrive(speed, _driverControl.getX(Hand.kRight));
+    var speed = _isSlowSpeedMode ? -_driverControl.getY(Hand.kLeft) * 0.5 : -_driverControl.getY(Hand.kLeft);
+    var rotation = _isSlowSpeedMode ? _driverControl.getX(Hand.kRight) * 0.5 : _driverControl.getX(Hand.kRight);
+    _drivetrain.arcadeDrive(speed, rotation);
 
     if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
       _isStiltMode = !_isStiltMode;
@@ -134,12 +135,12 @@ public class Robot extends TimedRobot {
     var leftBumperPressed = _driverControl.getBumperPressed(Hand.kLeft);
     var rightBumperPressed = _driverControl.getBumperPressed(Hand.kRight);
     if ((leftBumper && rightBumperPressed) || (rightBumper && leftBumperPressed)){
-      _isReverseMode = !_isReverseMode;
+      _isSlowSpeedMode = !_isSlowSpeedMode;
     }
 
     if(_isStiltMode){
       _stilts.driveRearLegs(deadband(-_driverControl.getY(Hand.kLeft)*0.5));
-      _stilts.driveFrontLegs(deadband(_driverControl.getY(Hand.kRight)*0.5));
+      _stilts.driveFrontLegs(deadband(-_driverControl.getY(Hand.kRight)*0.5));
       _stilts.driveWheel(_driverControl.getTriggerAxis(Hand.kRight) - _driverControl.getTriggerAxis(Hand.kLeft));
     }
 
