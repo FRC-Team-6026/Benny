@@ -10,6 +10,8 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.StatusFrameEnhanced;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.TalonSRXPIDSetConfiguration;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -137,12 +139,12 @@ public class Stilts{
 	}
 
     public void driveRearLegsEncoder(double output){
-		_rearTarget = output * 200;
+		_rearTarget = output;
 		_rearLegs.set(ControlMode.MotionMagic, _rearTarget);
 	}
 
 	public void driveFrontLegsEncoder(double output){
-		_frontTarget = output * 200;
+		_frontTarget = output;
 		_frontLegs.set(ControlMode.MotionMagic, _frontTarget);
 	}
 

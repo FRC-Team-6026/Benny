@@ -54,7 +54,7 @@ public class HatchGrabber{
     
         if(_grabberState == GrabberState.PlacingHatch && _solenoidCycleCount > _cycleDelay){
           retractGrip();
-          _grabberState = GrabberState.NeedToCloseGrabber;
+          _grabberState = GrabberState.None;
           _solenoidCycleCount = 0;
         }
     

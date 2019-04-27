@@ -43,7 +43,6 @@ public class Robot extends TimedRobot {
   private UsbCamera _driveCamera;
   private UsbCamera _targetCamera;
   private VideoSink _cameraServer;
-  private boolean _isStiltMode = false;
   private boolean _isSlowSpeedMode = false;
   
   /**
@@ -75,7 +74,6 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    SmartDashboard.putBoolean("Stilt mode", _isStiltMode);
     SmartDashboard.putBoolean("Slow speed mode", _isSlowSpeedMode);
     SmartDashboard.putNumber("Heading", _imu.getAngleZ());
     _stilts.smartDashboardDisplay();
@@ -109,6 +107,9 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     _hatchGrabber.initializeGrip();
+    _isSlowSpeedMode = true;
+    clearButtons(_operatorControl);
+    clearButtons(_driverControl);
   }
 
   /**
@@ -123,11 +124,21 @@ public class Robot extends TimedRobot {
 
   private void driverPeriodic(){
     var speed = _isSlowSpeedMode ? -_driverControl.getY(Hand.kLeft) * 0.6 : -_driverControl.getY(Hand.kLeft);
-    var rotation = _isSlowSpeedMode ? _driverControl.getX(Hand.kRight) * 0.6 : _driverControl.getX(Hand.kRight);
+    var rotation = _isSlowSpeedMode ? _driverControl.getX(Hand.kRight) * 0.8 : _driverControl.getX(Hand.kRight);
     _drivetrain.arcadeDrive(speed, rotation);
 
-    if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
-      _isStiltMode = !_isStiltMode;
+    if (_driverControl.getTriggerAxis(Hand.kLeft) > 0.9) {
+      _isSlowSpeedMode = true;
+      _stilts.driveFrontLegsEncoder(-15000);
+    } else {
+      _stilts.driveFrontLegsEncoder(100);
+    }
+
+    if (_driverControl.getTriggerAxis(Hand.kRight) > 0.9) {
+      _isSlowSpeedMode = true;
+      _stilts.driveRearLegsEncoder(17000);
+    } else {
+      _stilts.driveRearLegsEncoder(-100);
     }
 
     var leftBumper = _driverControl.getBumper(Hand.kLeft);
@@ -136,11 +147,6 @@ public class Robot extends TimedRobot {
     var rightBumperPressed = _driverControl.getBumperPressed(Hand.kRight);
     if ((leftBumper && rightBumperPressed) || (rightBumper && leftBumperPressed)){
       _isSlowSpeedMode = !_isSlowSpeedMode;
-    }
-
-    if(_isStiltMode){
-      _stilts.driveRearLegsEncoder(deadband(-_driverControl.getY(Hand.kLeft)));
-      _stilts.driveFrontLegsEncoder(deadband(-_driverControl.getY(Hand.kRight)));
     }
 
     if(_driverControl.getStartButtonPressed()){
@@ -177,21 +183,35 @@ public class Robot extends TimedRobot {
     }
   }
 
+  private void clearButtons(XboxController controller) {
+    controller.getAButtonPressed();
+    controller.getAButtonReleased();
+    controller.getBButtonPressed();
+    controller.getBButtonReleased();
+    controller.getBackButtonPressed();
+    controller.getBackButtonReleased();
+    controller.getBumperPressed(Hand.kLeft);
+    controller.getBumperReleased(Hand.kLeft);
+    controller.getBumperPressed(Hand.kRight);
+    controller.getBumperReleased(Hand.kRight);
+    controller.getStartButtonPressed();
+    controller.getStartButtonReleased();
+    controller.getStickButtonPressed(Hand.kLeft);
+    controller.getStickButtonReleased(Hand.kRight);
+    controller.getStickButtonPressed(Hand.kRight);
+    controller.getStickButtonReleased(Hand.kRight);
+    controller.getXButtonPressed();
+    controller.getXButtonReleased();
+    controller.getYButtonPressed();
+    controller.getYButtonReleased();
+  }
+
   /**
    * This function is called periodically during test mode.
    */
   @Override
   public void testPeriodic() {
-    if (_driverControl.getStickButton(Hand.kLeft) && _driverControl.getStickButtonPressed(Hand.kRight)){
-      _isStiltMode = !_isStiltMode;
-    }
-
-    if(_isStiltMode){
-      _stilts.driveRearLegsEncoder(-_driverControl.getY(Hand.kLeft));
-      _stilts.driveFrontLegsEncoder(-_driverControl.getY(Hand.kRight));
-    } else {
-      _drivetrain.arcadeDrive(-_driverControl.getY(Hand.kLeft), _driverControl.getX(Hand.kRight));
-    }
+    _drivetrain.arcadeDrive(-_driverControl.getY(Hand.kLeft), _driverControl.getX(Hand.kRight));
 
     var liftOutput = deadband(-_operatorControl.getY(Hand.kLeft));
     _lift.liftManualControl(liftOutput);
